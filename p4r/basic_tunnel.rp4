@@ -1,0 +1,126 @@
+header ethernet_t {
+	bit<48>	dstAddr;
+	bit<48>	srcAddr;
+	bit<16>	etherType;
+}
+header myTunnel_t {
+	bit<16>	proto_id;
+	bit<16>	dst_id;
+}
+header ipv4_t {
+	bit<4>	version;
+	bit<4>	ihl;
+	bit<8>	diffserv;
+	bit<16>	totalLen;
+	bit<16>	identification;
+	bit<3>	flags;
+	bit<13>	fragOffset;
+	bit<8>	ttl;
+	bit<8>	protocol;
+	bit<16>	hdrChecksum;
+	bit<32>	srcAddr;
+	bit<32>	dstAddr;
+}
+
+struct metadata {
+} meta;
+
+struct header {
+	ethernet_t ethernet
+	myTunnel_t myTunnel
+	ipv4_t ipv4
+} hdr;
+
+parser MyParser(packet_in packet) {
+	state start {
+		packet.extract(hdr.ethernet);
+		transition select(hdr.ethernet.etherType) {
+			0x1212: parse_myTunnel;
+			0x0800: parse_ipv4;
+			default: accept;
+		}
+	}
+	state parse_myTunnel {
+		packet.extract(hdr.myTunnel);
+		transition select(hdr.myTunnel.proto_id) {
+			0x0800: parse_ipv4;
+			default: accept;
+		}
+	}
+	state parse_ipv4 {
+		packet.extract(hdr.ipv4);
+		transition accept;
+	}
+}
+
+actions {
+	action NoAction() {
+	}
+	action drop() {
+		mark_to_drop(standard_metadata);
+	}
+	action ipv4_forward(bit<48> dstAddr, bit<9> port) {
+		standard_metadata.egress_spec = port;
+		hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+		hdr.ethernet.dstAddr = dstAddr;
+		hdr.ipv4.ttl = ((hdr.ipv4.ttl + 0xff) & 0xff);
+	}
+	action myTunnel_forward(bit<9> port) {
+		standard_metadata.egress_spec = port;
+	}
+}
+
+tables {
+	table ipv4_lpm {
+		key = {
+			hdr.ipv4.dstAddr: lpm;
+		}
+		size = 1024;
+		default_action = drop();
+	}
+	table myTunnel_exact {
+		key = {
+			hdr.myTunnel.dst_id: exact;
+		}
+		size = 1024;
+		default_action = drop();
+	}
+}
+
+control MyIngress {
+	stage node_2 {
+		parser {
+			ipv4;
+			myTunnel;
+		};
+		matcher {
+			switch (hdr.ipv4.isValid(), hdr.myTunnel.isValid()) {
+				0b10: table(ipv4_lpm);
+				*: stage(node_4);
+			}
+		};
+		executor {
+			drop: node_4;
+			ipv4_forward: node_4;
+			NoAction: node_4;
+		};
+	}
+	stage node_4 {
+		parser {
+			myTunnel;
+		};
+		matcher {
+			switch (hdr.myTunnel.isValid()) {
+				0b1: table(myTunnel_exact);
+				*: None;
+			}
+		};
+		executor {
+			drop: None;
+			myTunnel_forward: None;
+		};
+	}
+}
+control MyEgress {
+}
+
