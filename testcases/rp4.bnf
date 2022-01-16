@@ -1,0 +1,3 @@
+<rp4_declaration> ::= <headers_declaration> <structs_declaration> <header_sequence_declaration> 
+                     <actions_declaration> <tables_declaration> {<control_declaration>} 
+                     <ingress_pipeline> <egress_pipeline> <user_funcs>
