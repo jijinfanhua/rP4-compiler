@@ -18,6 +18,8 @@
 
 > 做完这个之后还需要做在线更新的内容，也就是编译cmd+rP4代码片段。
 
+> 注意：有一种情况是，在判断后，不查表，直接执行action，应该在gateway中再加一个map，指示next_action；当proc_id==cur_proc_id并且matcher_id == -1时，直接执行next_action。
+
 1. Parser的初始化及在线更新
     - **parser_level** (set/init_parser_level)：每个processor的parser级数；
     - **parser_entry**：每一级parser的内容；
