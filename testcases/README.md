@@ -46,6 +46,7 @@
         - fieldInfo：hdrId, internalOffset, fdLen，共三个属性确定一个field；metadata、standard_metadata等等也视为header，赋予特定的id。比如设定最大header数量为64，那么standard_metadata的id为62，metadata的id为63.
     - **需要设定每个matcher的miss_act**：因为有16个matcher，所以组成了bitmap，如果matcher miss并且miss_act为0，不执行任何操作；如果matcher miss并且miss_act为1，执行miss_action。
     - 当更新时，需要清空之前的所有配置以及删除表内容，然后重新设定上述内容。
+    - **关于miss hit**：如果gateway检测不通过，则直接通向下一个proc；通过了，如果查表hit，则执行相应的action，并跳转到该action对应的next_proc，如果miss，则执行default所指定的action，可以有可以无，但是需要在action中指定next_proc。（问题：可能相同的action对应不同的next_proc？）
 
 4. Executor的初始化及在线更新
     - 每个executor由一至多个action组成，每个action由多个primitive组成；
