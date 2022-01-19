@@ -1,22 +1,145 @@
 
-在simple_switch_ecmp中，有更多的变化：
 
-1. 因为这个P4程序是以control为单位来写函数的，所以就可能有局部变量，我们需要将局部变量提取出来作为字段。增加temp_metatdata，负责容纳局部变量；
+> 待解决问题: header.isValid()的匹配问题；HIT MISS的处理问题
 
-2. 因为功能函数是以control为单位，比如control IPv4{}里面有ipv4.fib和ipv4.fib_lpm两个表，如果我们要把表写在一起的话，我觉得有必要将control名字与表名字连在一起，ipv4_fib, ipv4_fib_lpm，以防和其他冲突，比如IPv6也有这两个表。同理，action也应该按照control区分；
+---
 
-3. 小心NoAction以及miss的处理。我觉得还是应该在executor中添加default: 的跳转，比如执行NoAction，作为miss的处理。不应该在table中加`const default_action = dmac_miss;`类似的语句。
+**rP4->JSON 控制器需要的信息定义** (2022.01.19)
 
-4. isValid()应该作为header的一个字段处理，或者说在struct headers{}中，作为字段，这个在后面的翻译中需要用到。
+*Global*
+- SRAM: array, SRAM_NUM_ALL
+    - width: SRAM_WIDTH
+    - depth: SRAM_DEPTH
+    - uint8_t tbl[SRAM_WIDTH * SRAM_DEPTH / 8]
+- TCAM: array, TCAM_NUM_ALL
+    - width: TCAM_WIDTH
+    - depth: TCAM_DEPTH
+    - uint8_t tbl[TCAM_WIDTH * TCAM_DEPTH / 8]
+    - uint8_t mask[TCAM_WIDTH * TCAM_DEPTH / 8]
+
+1. parser
+    - parser_level: indexed by procId
+    - parser_tcam_entry (key):
+        - current_state: 8-bit
+        - entry: 32-bit
+        - mask: 32-bit
+    - parser_sram_entry (value):
+        - hdr_id: 8-bit
+        - hdr_len: 16-bit
+        - next_state: 8-bit
+        - transition_field_num: 8-bit (在transition select中的字段数量)
+        - transition_fields: list
+            - hdr_id: 8-bit
+            - field_internal_offset: 16-bit
+            - field_length: 16-bit
+    - **update function**
+        - clearParser(procId, parser_level)
+        - insertParserEntry(current_state, entry, mask, hdr_id, hdr_len, next_state, transition_field_num, transition_fields)
+
+2. gateway
+    - bitmap: 8-bit，switch()的值
+    - exps: vector\<RelationExp\> 逻辑表达式集合
+        - param1: GateParam
+            - type: FIELD, CONSTANT
+            - union value
+                - constant_data: CONSTANT
+                    - data_len
+                    - val: uint8_t[]
+                - field: FIELD
+                    - hdr_id: 8-bit
+                    - field_internal_offset: 16-bit
+                    - field_len: 16-bit
+        - param2: GateParam
+        - relation
+            - \> < >= <= == !=
+    - res_next_proc: map\<bitmap, int\> 字典，相应的判断值得到相应的next_proc_id，如果等于cur_proc_id，则执行下面的matcher;若不等，跳转到下个proc
+    - res_next_matcher: map\<bitmap, int\> 字典，根据判断值得到相应的matcher_id（如果cur_proc_id==next_proc_id的话）
+    - res_next_action: map<bitmap, int\> 字典，如果next_proc_id==cur_proc_id && matcher_id==-1，则说明不执行查表，直接执行action_id指定的action
+    - **update function**
+        - clear_all()
+        - insert_exp(exp)
+        - clear_res_next()
+        - modify_res_map(key, proc_id, matcher_id, action_id)
 
 
-**rP4->JSON**
+3. matcher
+    - proc_id
+    - miss_act_bitmap: uint8_t[MATCHER_THREAD_NUM], inidicate whether to execute default action by 0 1
+    - matcher_thread[16]: 每个matcher中会有16个matcher_thread
+        - proc_id
+        - match_type: Exact, Ternary, LPM
+        - SRAMs[SRAM_NUM_PER_CLUSTER]: pointer to global SRAMs
+        - TCAMs[TCAM_NUM_PER_CLUSTER]: pointer to global TCAMs
+        - union key_config
+            - sram_key_config: uint8_t[SRAM_NUM_PER_CLUSTER]
+            - tcam_key_config: uint8_t[TCAM_NUM_PER_CLUSTER]
+        - union key_width
+            - sram_slice_key_width: e.g., 200-bit key, 128-bit SRAM_WIDTH, the value is 2
+            - tcam_slice_key_width
+        - union key_depth
+            - sram_slice_depth
+            - tcam_slice_depth
+        - sram_value_config: uint8_t[SRAM_NUM_PER_CLUSTER]
+        - sram_slice_value_width
+        - tcam_idx: incremental to insert TCAM entry
+        - miss_act_id: if table miss, execute this action in executor
+        - fieldInfos: the matching fields (vector)
+            - hdr_id: 8-bit
+            - field_internal_offset: 16-bit
+            - field_length: 16-bit
+    - 说明：在一个matcher中value肯定是SRAM，key由match_type确定是SRAM还是TCAM；每个matcher_thread会指向其所在簇的SRAM和TCAM
+    - **update function**
+        - clear_old_config(proc_id, matcher_id)
+            - clear configuration
+            - clear table
+        - init/set_match_type(match_type)
+        - set_mem_config(proc_id, matcher_id, key_width, value_width, depth, key_config, value_config)
+        - set_match_field_info(vector\<FieldInfo\>)
+            - hdr_id: 8-bit
+            - field_internal_offset: 16-bit
+            - field_len: 16-bit
+        - insert_sram_entry(key, value, key_byte_len, value_byte_len)
+        - insert_tcam_entry(key, mask, value, key_byte_len, value_byte_len)
+
+4. executor
+    - action_num
+    - actions: (vector)
+        - parameter_num: 传入参数的数量
+        - action_para_lens: vector\<int\> 传入参数的长度
+        - action_paras: vector\<ActionParam\> 传入参数
+            - action_para_len
+            - val: uint8_t[]
+        - next_proc_id
+        - primitives: vector\<Primitive\>
+            - op: ADD, SUB, SET_FIELD, COPY_FIELD
+            - operand_num: 该primitive需要的操作数数量
+            - operands: array(Operand)
+                - type: CONSTANT常数, FIELD字段, PARAM传入参数, HEADER(push pop)
+                - union val
+                    - header_id: HEADER
+                    - action_para_id: PARAM
+                    - field: FIELD
+                        - hdr_id: 8-bit
+                        - field_internal_offset: 16-bit
+                        - field_len: 16-bit
+                    - constant_data: CONSTANT
+                        - data_len
+                        - val: uint8_t[]
+    - **update function**
+        - clear_action()
+        - delete_action(action_id)
+        - set_action_para_value(value: uint8_t[])
+        - insert_action(action: Action)
+
+
+
+---
+
+**rP4->JSON 说明**
 
 > Processor间的跳转：在软件交换机中没有processor间crossbar的概念，在一个processor内处理完成之后，设定next_proc_id，由这个变量确定下一个processor。
 
 > 分簇：现在设定16个processor，共4个簇，总共128个SRAM(128bit\*1024)，64个TCAM(64bit\*1024)；
-
-> 做完这个之后还需要做在线更新的内容，也就是编译cmd+rP4代码片段。
 
 > 注意：有一种情况是，在判断后，不查表，直接执行action，应该在gateway中再加一个map，指示next_action；当proc_id==cur_proc_id并且matcher_id == -1时，直接执行next_action。
 
@@ -65,6 +188,8 @@
     - **在线更新**
         - 支持的action不限，可以不删除原有的action；
         - InsertAction，为其分配ID。
+
+---
 
 **在线更新**
 
