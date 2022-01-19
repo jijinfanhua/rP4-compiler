@@ -69,20 +69,20 @@ struct metadata {
 	bit<1>	fib_tmp;
 	bit<1>	fibv6_tmp;
 	bit<1>	nexthop_routed;
-	bit<16>	metadata_t.bd;
-	bit<16>	metadata_t.vrf;
-	bit<16>	metadata_t.nexthop;
-	bit<16>	metadata_t.ifindex;
-	bit<16>	metadata_t.egress_ifindex;
-	bit<8>	metadata_t.bypass;
+	bit<16>	metadata_t_bd;
+	bit<16>	metadata_t_vrf;
+	bit<16>	metadata_t_nexthop;
+	bit<16>	metadata_t_ifindex;
+	bit<16>	metadata_t_egress_ifindex;
+	bit<8>	metadata_t_bypass;
 } meta;
 struct headers {
-	ethernet_t ethernet
-	vlan_tag_t vlan_tag
-	ipv4_t ipv4
-	ipv6_t ipv6
-	tcp_t tcp
-	udp_t udp
+	ethernet_t	ethernet;
+	vlan_tag_t	vlan_tag;
+	ipv4_t	ipv4;
+	ipv6_t	ipv6;
+	tcp_t	tcp;
+	udp_t	udp;
 } hdr;
 
 parser MyParser(packet_in packet) {
@@ -133,11 +133,11 @@ actions {
 	action NoAction() {
 	}
 	action set_port_attributes(bit<16> ifindex) {
-		meta.metadata_t.ifindex = ifindex;
+		meta.metadata_t_ifindex = ifindex;
 	}
 	action set_bd_attributes(bit<16> bd, bit<16> vrf) {
-		meta.metadata_t.bd = bd;
-		meta.metadata_t.vrf = vrf;
+		meta.metadata_t_bd = bd;
+		meta.metadata_t_vrf = vrf;
 	}
 	action malformed_pkt() {
 	}
@@ -168,24 +168,24 @@ actions {
 		lkp_0.ipv6_dst_addr = hdr.ipv6.dst_addr;
 	}
 	action dmac_miss() {
-		meta.metadata_t.egress_ifindex = 0xffff;
+		meta.metadata_t_egress_ifindex = 0xffff;
 	}
 	action dmac_hit(bit<16> ifindex) {
-		meta.metadata_t.egress_ifindex = ifindex;
+		meta.metadata_t_egress_ifindex = ifindex;
 	}
 	action fib_fib_hit(bit<16> nexthop_index) {
-		meta.metadata_t.nexthop = nexthop_index;
+		meta.metadata_t_nexthop = nexthop_index;
 	}
 	action fib_fib_miss() {
 	}
 	action fibv6_fib_hit(bit<16> nexthop_index) {
-		meta.metadata_t.nexthop = nexthop_index;
+		meta.metadata_t_nexthop = nexthop_index;
 	}
 	action fibv6_fib_miss() {
 	}
 	action set_nexthop_attributes(bit<16> bd, bit<48> dmac) {
 		meta.nexthop_routed = true;
-		meta.metadata_t.bd = bd;
+		meta.metadata_t_bd = bd;
 		hdr.ethernet.dst_addr = dmac;
 	}
 	action rewrite_ipv4() {
@@ -206,7 +206,7 @@ actions {
 		meta.fib_tmp = false;
 	}
 	action act_1() {
-		meta.metadata_t.nexthop = 0x0000;
+		meta.metadata_t_nexthop = 0x0000;
 	}
 	action act_2() {
 		meta.fibv6_tmp = true;
@@ -215,10 +215,10 @@ actions {
 		meta.fibv6_tmp = false;
 	}
 	action act_4() {
-		meta.metadata_t.nexthop = 0x0000;
+		meta.metadata_t_nexthop = 0x0000;
 	}
 	action act_5() {
-		meta.metadata_t.bypass = 0x00;
+		meta.metadata_t_bypass = 0x00;
 	}
 	action act_6() {
 		meta.nexthop_routed = false;
@@ -235,7 +235,7 @@ tables {
 	}
 	table port_vlan_to_bd_mapping {
 		key = {
-			meta.metadata_t.ifindex: exact;
+			meta.metadata_t_ifindex: exact;
 			hdr.vlan_tag.isValid(): ternary;
 			hdr.vlan_tag.vid: ternary;
 		}
@@ -289,7 +289,7 @@ tables {
 	}
 	table fib_fib {
 		key = {
-			meta.metadata_t.vrf: exact;
+			meta.metadata_t_vrf: exact;
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
@@ -309,7 +309,7 @@ tables {
 	}
 	table fib_fib_lpm {
 		key = {
-			meta.metadata_t.vrf: exact;
+			meta.metadata_t_vrf: exact;
 			lkp_0.ipv4_dst_addr: lpm;
 		}
 		size = 1024;
@@ -323,7 +323,7 @@ tables {
 	}
 	table fibv6_fib {
 		key = {
-			meta.metadata_t.vrf: exact;
+			meta.metadata_t_vrf: exact;
 			lkp_0.ipv6_dst_addr: exact;
 		}
 		size = 1024;
@@ -343,7 +343,7 @@ tables {
 	}
 	table fibv6_fib_lpm {
 		key = {
-			meta.metadata_t.vrf: exact;
+			meta.metadata_t_vrf: exact;
 			lkp_0.ipv6_dst_addr: lpm;
 		}
 		size = 1024;
@@ -357,7 +357,7 @@ tables {
 	}
 	table ecmp {
 		key = {
-			meta.metadata_t.nexthop: exact;
+			meta.metadata_t_nexthop: exact;
 			lkp_0.ipv6_src_addr: exact;
 			lkp_0.ipv6_dst_addr: exact;
 			lkp_0.ipv6_flow_label: exact;
@@ -381,14 +381,14 @@ tables {
 	}
 	table smac_rewrite {
 		key = {
-			meta.metadata_t.bd: exact;
+			meta.metadata_t_bd: exact;
 		}
 		size = 1024;
 		default_action = NoAction();
 	}
 	table dmac {
 		key = {
-			meta.metadata_t.bd: exact;
+			meta.metadata_t_bd: exact;
 			hdr.ethernet.dst_addr: exact;
 		}
 		size = 1024;

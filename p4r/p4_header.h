@@ -5,10 +5,22 @@
 #include <algorithm>
 #include <iostream>
 
-struct P4HeaderField {
+class P4HeaderField {
+public:
     std::string name;
     int width;
+    std::string proper_name() const;
 };
+
+std::string P4HeaderField::proper_name() const {
+    std::string temp = name;
+    for (unsigned int i = 0; i < temp.size(); i++) {
+        if (temp[i] == '.') {
+            temp[i] = '_';
+        }
+    }
+    return temp;
+}
 
 class P4HeaderType {
 public:
@@ -66,7 +78,7 @@ std::ostream & operator<<(std::ostream & out, P4Headers const & v) {
         if (v.is_header(h.name)) {
             out << "header " << h.name << " {" << std::endl;
             for (auto & f : h.fields) {
-                out << "\tbit<" << f.width << ">\t" << f.name << ";" << std::endl;
+                out << "\tbit<" << f.width << ">\t" << f.proper_name() << ";" << std::endl;
             }
             out << "}" << std::endl;
         }
@@ -79,7 +91,7 @@ std::ostream & operator<<(std::ostream & out, P4Headers const & v) {
             }); hi != std::end(v.header_types)) {
                 for (auto & f : hi->fields) {
                     if (f.name.size() > 0 && f.name[0] != '_') {
-                        out << "\tbit<" << f.width << ">\t" << f.name << ";" << std::endl;
+                        out << "\tbit<" << f.width << ">\t" << f.proper_name() << ";" << std::endl;
                     }
                 }
             }
@@ -89,7 +101,7 @@ std::ostream & operator<<(std::ostream & out, P4Headers const & v) {
     out << "struct headers {" << std::endl;
     for (auto & h : v.headers) {
         if (!h.metadata) {
-            out << "\t" << h.header_type_name << " " << h.name << std::endl;
+            out << "\t" << h.header_type_name << "\t" << h.name << ";" << std::endl;
         }
     }
     return out << "} hdr;" << std::endl;

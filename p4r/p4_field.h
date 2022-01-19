@@ -11,6 +11,7 @@ public:
     static P4Headers& headers;
     bool is_header() const;
     std::string prefix() const;
+    std::ostream& out_suffix(std::ostream& out) const;
     friend std::ostream & operator<<(std::ostream & out, P4Field const & f);
     P4Field() : std::vector<std::string>() {}
     P4Field(const std::vector<std::string>& v): std::vector<std::string>(v) {}
@@ -36,16 +37,30 @@ std::string P4Field::prefix() const {
     }
 }
 
-std::ostream & operator<<(std::ostream & out, P4Field const & f) {
-    auto & hh = f.headers.headers;
-    out << f.prefix();
-    for (auto s = std::next(std::begin(f), 1); s != std::end(f); s++) {
-        out << ".";
+std::ostream& P4Field::out_suffix(std::ostream& out) const {
+    bool first = true;
+    for (auto s = std::next(std::begin(*this), 1); s != std::end(*this); s++) {
+        if (!first) {
+            out << ".";
+        } else {
+            first = false;
+        }
         if (*s == "$valid$") {
             out << "isValid()";
         } else {
-            out << *s;
+            for (auto c : *s) {
+                if (c == '.') {
+                    out << '_';
+                } else {
+                    out << c;
+                }
+            }
         }
     }
     return out;
+}
+
+std::ostream & operator<<(std::ostream & out, P4Field const & f) {
+    auto & hh = f.headers.headers;
+    return f.out_suffix(out << f.prefix() << ".");
 }
