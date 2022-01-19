@@ -65,3 +65,18 @@
     - **在线更新**
         - 支持的action不限，可以不删除原有的action；
         - InsertAction，为其分配ID。
+
+**在线更新**
+
+1. 控制器端更新指令+JSON配置
+2. parser更新
+    - 首先排空proc_id内的parser内容以及level；
+    - 然后设定新的parser_level，在特定level插入parser内容
+    - 内容：procId, parserLevel, state, key, mask, hdrId, hdrLen, nextState, transFieldNum, **transFds**
+    - transFds：list(hdrTd, internalOffset, fieldLen)
+    - 更新指令
+        - delete_link father_protocol_node child_protocol_node：删除哪里的表项
+        - add_link father_protocol_node child_protocol_node：在哪里添加表项
+        - *貌似不需要排空？*
+
+3. matcher更新
