@@ -25,7 +25,7 @@ header ipv4_t {
 struct metadata {
 } meta;
 
-struct header {
+struct headers {
 	ethernet_t ethernet
 	myTunnel_t myTunnel
 	ipv4_t ipv4

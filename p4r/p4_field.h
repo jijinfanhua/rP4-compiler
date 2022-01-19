@@ -6,53 +6,46 @@
 #include <algorithm>
 #include "p4_header.h"
 
-enum class P4FieldType {
-    none, standard_metadata, metadata, header
-};
-
 class P4Field : public std::vector<std::string> {
 public:
-    static P4Headers& vh;
-    friend P4FieldType get_type(P4Field const & f);
+    static P4Headers& headers;
+    bool is_header() const;
+    std::string prefix() const;
     friend std::ostream & operator<<(std::ostream & out, P4Field const & f);
+    P4Field() : std::vector<std::string>() {}
+    P4Field(const std::vector<std::string>& v): std::vector<std::string>(v) {}
 };
 
-P4FieldType get_type(P4Field const & f) {
-    auto pos = std::find_if(std::begin(f.vh), std::end(f.vh), [&](auto& h) { return h.name == f[0]; });
-    if (pos != std::end(f.vh)) {
-        if (pos->id < 2) {
-            return P4FieldType::standard_metadata;
-        } else if (pos->metadata) {
-            return P4FieldType::metadata;
-        } else {
-            return P4FieldType::header;
-        }
+bool P4Field::is_header() const {
+    auto & hh = headers.headers;
+    auto hi = std::find_if(std::begin(hh), std::end(hh), [&](auto& h) {
+        return h.name == (*this)[0];
+    });
+    return hi != std::end(hh) && !hi->metadata;
+}
+
+std::string P4Field::prefix() const {
+    auto & hh = headers.headers;
+    auto hi = std::find_if(std::begin(hh), std::end(hh), [&](auto& h) {
+        return h.name == (*this)[0];
+    });
+    if (hi != std::end(hh)) {
+        return hi->translated_prefix();
+    } else {
+        return "";
     }
-    return P4FieldType::none;
 }
 
 std::ostream & operator<<(std::ostream & out, P4Field const & f) {
-    if (auto s = std::begin(f); s != std::end(f)) {
-        if (*s == "standard_metadata") {
-            out << "standard_metadata";
-            s++;
+    auto & hh = f.headers.headers;
+    out << f.prefix();
+    for (auto s = std::next(std::begin(f), 1); s != std::end(f); s++) {
+        out << ".";
+        if (*s == "$valid$") {
+            out << "isValid()";
         } else {
-            auto ft = get_type(f);
-            if (ft == P4FieldType::header) {
-                out << "hdr";
-            } else if (ft == P4FieldType::metadata) {
-                out << "meta";
-            }
-        }
-        for (; s != std::end(f); s++) {
-            out << ".";
-            if (*s == "$valid$") {
-                out << "isValid()";
-            } else {
-                out << *s;
-            }
+            out << *s;
         }
     }
     return out;
 }
-

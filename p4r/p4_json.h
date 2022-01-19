@@ -1,6 +1,5 @@
 #pragma once
 
-#include "p4_header_type.h"
 #include "p4_header.h"
 #include "p4_parser.h"
 #include "p4_action.h"
@@ -8,7 +7,6 @@
 
 class P4Json {
 public:
-    P4HeaderTypes header_types;
     P4Headers headers;
     P4Parsers parsers;
     P4Actions actions;
@@ -18,7 +16,6 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& out, P4Json const & p4) {
-    out << p4.header_types << std::endl;
     out << p4.headers << std::endl;
     out << p4.parsers << std::endl;
     out << p4.actions << std::endl;

@@ -5,36 +5,14 @@
 #include <string>
 #include <algorithm>
 #include <iostream>
+#include "p4_rename.h"
 #include "p4_field.h"
-
-class P4RuntimeData {
-public:
-    std::string name;
-    int bitwidth;
-};
-
-class P4PrimitiveParamter;
-class P4Expression {
-public:
-    std::string op;
-    P4PrimitiveParamter* left;
-    P4PrimitiveParamter* right;
-};
-
-class P4PrimitiveParamter {
-public:
-    std::string type;
-    int runtime_data_value;
-    std::string header_value;
-    std::string hexstr_value;
-    P4Field field_value;
-    P4Expression* expression_value;
-};
+#include "p4_parameter.h"
 
 class P4Primitive {
 public:
     std::string op;
-    std::vector<P4PrimitiveParamter> parameters;
+    std::vector<P4Parameter> parameters;
 };
 
 class P4Action {
@@ -42,37 +20,23 @@ public:
     std::string name;
     std::vector<P4RuntimeData> runtime_data;
     std::vector<P4Primitive> primitives;
-    std::ostream & out_prim(std::ostream & out, P4PrimitiveParamter const & pp) const;
 };
+
+static P4Rename<P4Action>* action_rename = nullptr;
 
 class P4Actions : public std::vector<P4Action> {
 public:
+    std::string translate_name(const std::string& name) const;
     friend std::ostream & operator<<(std::ostream & out, P4Actions const & actions);
 };
 
-std::ostream & P4Action::out_prim(std::ostream & out, P4PrimitiveParamter const & pp) const {
-    if (pp.type == "field") {
-        out << pp.field_value;
-    } else if (pp.type == "runtime_data") {
-        out << runtime_data[pp.runtime_data_value].name;
-    } else if (pp.type == "hexstr") {
-        out << pp.hexstr_value;
-    } else if (pp.type == "header") {
-        out << pp.header_value;
-    } else if (pp.type == "expression") {
-        if (auto & exp = pp.expression_value; exp != nullptr) {
-            out << "(";
-            if (exp->left != nullptr) {
-                out_prim(out, *(exp->left)) << " ";
-            }
-            out << exp->op;
-            if (exp->right != nullptr) {
-                out_prim(out << " ", *(exp->right));
-            }
-            out << ")";
-        }
+std::string P4Actions::translate_name(const std::string& name) const {
+    if (action_rename == nullptr) {
+        action_rename = new P4Rename<P4Action>(*this, [](auto & act) {
+            return act.name;
+        });
     }
-    return out;
+    return action_rename->get_name(name);
 }
 
 std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
@@ -84,7 +48,7 @@ std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
         } else {
             action_names.insert(action.name);
         }
-        out << "\taction " << action.name.substr(action.name.find_last_of('.') + 1) << "(";
+        out << "\taction " << actions.translate_name(action.name) << "(";
         for (bool first = true; auto & rd : action.runtime_data) {
             if (!first) {
                 out << ", ";
@@ -97,7 +61,8 @@ std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
         for (auto & p : action.primitives) {
             out << "\t\t";
             if (p.op == "assign") {
-                action.out_prim(action.out_prim(out, p.parameters[0]) << " = ", p.parameters[1]) << ";" << std::endl;
+                p.parameters[0].output(out, &(action.runtime_data)) << " = ";
+                p.parameters[1].output(out, &(action.runtime_data)) << ";" << std::endl;
             } else {
                 out << p.op << "(";
                 for (bool first = true; auto & pp : p.parameters) {
@@ -106,7 +71,7 @@ std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
                     } else {
                         first = false;
                     }
-                    action.out_prim(out, pp);
+                    pp.output(out, &(action.runtime_data));
                 }
                 out << ");" << std::endl;
             }
