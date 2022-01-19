@@ -24,7 +24,7 @@
                         <state_name> 
                       | 'accept'
                         ';'
-<transition_key> ::= <num>
+<transition_key> ::= <integer>
                     | 'default'
 
 # action
@@ -35,7 +35,7 @@
 <expression> ::= <lvalue> '=' <ops> ';'
                 | <action_name> ';' # function call
 <lvalue> ::= <instance_name>'.'<member_name>['.'<field_name>]
-<oprand> ::= <num>
+<oprand> ::= <integer>
             | <instance_name>'.'<member_name>['.'<field_name>]
             | <parameter_name>
 <ops> ::= [<op>] <operand>
@@ -53,7 +53,7 @@
                 | 'const default_action = ' <action_name> ';'
 <match_entry> ::= <match_key> ':' <action_name> ';'
 <match_key> ::= '(' [{<value>','}] [<value>] ')'
-<value> ::= <num> | <bool>
+<value> ::= <integer> | <bool>
 <bool> ::= true | false
 
 # ingress
@@ -63,13 +63,14 @@
 <parser_def> ::= 'parser' '{' {<instance_name>'.'<member_name> ';'} '}'
 <matcher_def> ::= 'matcher {' 'switch(' {<ops>','} <ops>')' '{' <switch_entry>  '}' '}'
 <switch_entry> ::= <switch_key> : <switch_value> ';'
-<switch_key> ::= <num> | '*'
+<switch_key> ::= <integer> | '*'
 <switch_value> ::= 'table(' <table_name> ')'
                 |  'stage(' <stage_name> ')'
                 |  'None'
                 |  'NoAction'
 <executor_def> ::= 'executor {' {<action_name> ':' <stage_name> ';'} '}'
 
+# variable
 <header_name> ::= <identifier>
 <field_name> ::= <identifier>
 <member_name> ::= <identifier>
@@ -82,7 +83,10 @@
 <action_name> ::= <identifier>
 <ingress_name> ::= <identifier>
 <egress_name> ::= <identifier>
-<letter> ::= "a" | "b" | ... | "z" | "A" | ... | "Z";
-<digit> ::= "0" | "1" | "2" | ... | "9";
-<identifier> = letter , { letter | digit | "_" }
+<letter> ::= 'a' | 'b' | ... | 'z' | 'A' | ... | 'Z'
+<digit> ::= '0' | '1' | '2' | ... | '9'
+<identifier> = <letter>  { <letter> | <digit> | '_' }
 <num> ::= <digit> | <digit> <num>
+<binary> ::= '0b'{'0' | '1'}
+<hex> ::= '0x'{<digit> | 'A' | 'B' | ... | 'F' | 'a' | 'b' | ... | 'f'}
+<integer> ::= <num> | <binary> | <hex>
