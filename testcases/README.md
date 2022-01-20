@@ -32,6 +32,7 @@
             - hdr_id: 8-bit
             - field_internal_offset: 16-bit
             - field_length: 16-bit
+            - field_type: FIELD, VALID (if VALID, only hdr_id, field_length work)
     - **update function**
         - clearParser(procId, parser_level)
         - insertParserEntry(current_state, entry, mask, hdr_id, hdr_len, next_state, transition_field_num, transition_fields)
@@ -49,6 +50,7 @@
                     - hdr_id: 8-bit
                     - field_internal_offset: 16-bit
                     - field_len: 16-bit
+                    - field_type: FIELD, VALID
         - param2: GateParam
         - relation
             - \> < >= <= == !=
@@ -87,6 +89,7 @@
             - hdr_id: 8-bit
             - field_internal_offset: 16-bit
             - field_length: 16-bit
+            - field_type: FIELD, VALID
     - 说明：在一个matcher中value肯定是SRAM，key由match_type确定是SRAM还是TCAM；每个matcher_thread会指向其所在簇的SRAM和TCAM
     - **update function**
         - clear_old_config(proc_id, matcher_id)
@@ -98,6 +101,7 @@
             - hdr_id: 8-bit
             - field_internal_offset: 16-bit
             - field_len: 16-bit
+            - field_type: FIELD, VALID
         - insert_sram_entry(key, value, key_byte_len, value_byte_len)
         - insert_tcam_entry(key, mask, value, key_byte_len, value_byte_len)
 
@@ -122,6 +126,7 @@
                         - hdr_id: 8-bit
                         - field_internal_offset: 16-bit
                         - field_len: 16-bit
+                        - field_type: FIELD, VALID
                     - constant_data: CONSTANT
                         - data_len
                         - val: uint8_t[]
