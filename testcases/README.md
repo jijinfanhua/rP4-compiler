@@ -2,6 +2,12 @@
 
 > 待解决问题: header.isValid()的匹配问题；HIT MISS的处理问题
 
+> parser miss问题
+
+---
+
+![](./proc.png)
+
 ---
 
 **rP4->JSON 控制器需要的信息定义** (2022.01.19)
@@ -33,6 +39,7 @@
             - field_internal_offset: 16-bit
             - field_length: 16-bit
             - field_type: FIELD, VALID, HIT, MISS (if VALID, only hdr_id, field_length work; if HIT/MISS, all three don't work)
+        - miss_act: 8-bit， 表示在next_state的transition中，如果查不到匹配字段应该执行的动作：0 accept, 1 drop
     - **update function**
         - clearParser(procId, parser_level)
         - insertParserEntry(current_state, entry, mask, hdr_id, hdr_len, next_state, transition_field_num, transition_fields)
