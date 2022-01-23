@@ -25,6 +25,7 @@
                       | 'accept'
                         ';'
 <transition_key> ::= <integer>
+                    | <integer> '&&&' <integer>
                     | 'default'
 
 # action
@@ -53,7 +54,9 @@
                 | 'const default_action = ' <action_name> ';'
 <match_entry> ::= <match_key> ':' <action_name> ';'
 <match_key> ::= '(' [{<value>','}] [<value>] ')'
-<value> ::= <integer> | <bool>
+<value> ::= <integer> 
+            | <integer> '&&&' <integer>
+            | <bool>
 <bool> ::= true | false
 
 # ingress
