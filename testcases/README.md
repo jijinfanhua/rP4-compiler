@@ -2,6 +2,12 @@
 
 > 待解决问题: header.isValid()的匹配问题；HIT MISS的处理问题
 
+> parser miss问题
+
+---
+
+![](./proc.png)
+
 ---
 
 **rP4->JSON 控制器需要的信息定义** (2022.01.19)
@@ -33,6 +39,7 @@
             - field_internal_offset: 16-bit
             - field_length: 16-bit
             - field_type: FIELD, VALID, HIT, MISS (if VALID, only hdr_id, field_length work; if HIT/MISS, all three don't work)
+        - miss_act: 8-bit， 表示在next_state的transition中，如果查不到匹配字段应该执行的动作：0 accept, 1 drop
     - **update function**
         - clearParser(procId, parser_level)
         - insertParserEntry(current_state, entry, mask, hdr_id, hdr_len, next_state, transition_field_num, transition_fields)
@@ -56,7 +63,6 @@
             - \> < >= <= == !=
     - res_next_proc: map\<bitmap, int\> 字典，相应的判断值得到相应的next_proc_id，如果等于cur_proc_id，则执行下面的matcher;若不等，跳转到下个proc
     - res_next_matcher: map\<bitmap, int\> 字典，根据判断值得到相应的matcher_id（如果cur_proc_id==next_proc_id的话）
-    - res_next_action: map<bitmap, int\> 字典，如果next_proc_id==cur_proc_id && matcher_id==-1，则说明不执行查表，直接执行action_id指定的action
     - **update function**
         - clear_all()
         - insert_exp(exp)
@@ -69,6 +75,7 @@
     - miss_act_bitmap: uint8_t[MATCHER_THREAD_NUM], inidicate whether to execute default action by 0 1
     - matcher_thread[16]: 每个matcher中会有16个matcher_thread
         - proc_id
+        - no_table: true, false, 该thread是否有table
         - match_type: Exact, Ternary, LPM
         - SRAMs[SRAM_NUM_PER_CLUSTER]: pointer to global SRAMs
         - TCAMs[TCAM_NUM_PER_CLUSTER]: pointer to global TCAMs
@@ -96,6 +103,7 @@
             - clear configuration
             - clear table
         - init/set_match_type(match_type)
+        - set_no_table
         - set_mem_config(proc_id, matcher_id, key_width, value_width, depth, key_config, value_config)
         - set_match_field_info(vector\<FieldInfo\>)
             - hdr_id: 8-bit
@@ -113,7 +121,6 @@
         - action_paras: vector\<ActionParam\> 传入参数
             - action_para_len
             - val: uint8_t[]
-        - next_proc_id
         - primitives: vector\<Primitive\>
             - op: ADD, SUB, SET_FIELD, COPY_FIELD
             - operand_num: 该primitive需要的操作数数量
