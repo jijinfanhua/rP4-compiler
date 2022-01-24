@@ -66,8 +66,8 @@
 # ingress
 <ingress_def> ::= 'control' <ingress_name> '{' [{<stage_def>}] '}'
 <egress_def> ::= 'control' <egress_name> '{' [{<stage_def>}] '}'
-<stage_def> ::= 'stage' <stage_name> '{' <parser_def> <matcher_def> <executor_def> '}'
-<parser_def> ::= 'parser' '{' {<instance_name>'.'<member_name> ';'} '}'
+<stage_def> ::= 'stage' <stage_name> '{' <parser_statement> <matcher_def> <executor_def> '}'
+<parser_statement> ::= 'parser' '{' {<instance_name>'.'<member_name> ';'} '}'
 <matcher_def> ::= 'matcher {' 'switch(' {<ops>','} <ops>')' '{' <switch_entry>  '}' '}'
 <switch_entry> ::= <switch_key> : <switch_value> ';'
 <switch_key> ::= <integer> | '*'
