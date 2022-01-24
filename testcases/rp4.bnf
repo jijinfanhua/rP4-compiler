@@ -20,6 +20,8 @@
                 '}'
 <extract_statement> ::= <parameter>'.extract(' <instance_name>'.'<member_name> ');'
 <transition_statement> ::= 'transition select(' <instance_name>'.'<member_name>.<field_name> ') {' {<transition_entry>} '}'
+                        |   'transtioh accept;'
+                        |   'transition reject;'
 <transition_entry> ::= <transition_key> ':' 
                         <state_name> 
                       | 'accept'
