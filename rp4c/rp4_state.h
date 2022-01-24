@@ -19,23 +19,41 @@ class Rp4TransitionEntry : public Rp4TreeNode {
 public:
     std::shared_ptr<Rp4Key> key = nullptr;
     std::string next;
+    bool is_accept = false;
     Rp4TransitionEntry() {}
-    Rp4TransitionEntry(std::shared_ptr<Rp4Key> _key, std::string _next):
-        key(std::move(_key)), next(std::move(_next)) {}
+    Rp4TransitionEntry(std::shared_ptr<Rp4Key> _key, std::string _next, bool _is_accept = false):
+        key(std::move(_key)), next(std::move(_next)), is_accept(_is_accept) {}
+    virtual std::vector<const Rp4TreeNode*> children() const {
+        return { key.get() };
+    }
     virtual std::string toString() const {
         return "transition-entry( " + next + ")";
     }
 };
 
 class Rp4Transition : public Rp4TreeNode {
+
+};
+
+class Rp4SelectTransition : public Rp4Transition {
 public:
     Rp4Field target;
     std::vector<Rp4TransitionEntry> entries;
-    Rp4Transition() {}
-    Rp4Transition(Rp4Field _target, std::vector<Rp4TransitionEntry> _entries):
+    Rp4SelectTransition() {}
+    Rp4SelectTransition(Rp4Field _target, std::vector<Rp4TransitionEntry> _entries):
         target(std::move(_target)), entries(std::move(_entries)) {}
     virtual std::string toString() const {
-        return "transition";
+        return "transition-select";
+    }
+};
+
+class Rp4DirectTransition : public Rp4Transition {
+public:
+    Rp4TransitionEntry entry;
+    Rp4DirectTransition() {}
+    Rp4DirectTransition(Rp4TransitionEntry _entry): entry(std::move(_entry)) {}
+    virtual std::string toString() const {
+        return "transition-direct";
     }
 };
 
@@ -43,17 +61,17 @@ class Rp4StateDef : public Rp4TreeNode {
 public:
     std::string name;
     Rp4Extract extract;
-    Rp4Transition transition;
+    std::shared_ptr<Rp4Transition> transition;
     Rp4StateDef() {}
-    Rp4StateDef(std::string _name, Rp4Extract _extract, Rp4Transition _transition):
+    Rp4StateDef(std::string _name, Rp4Extract _extract, std::shared_ptr<Rp4Transition> _transition):
         name(std::move(_name)), extract(std::move(_extract)), transition(std::move(_transition)) {}
     virtual std::string toString() const {
         return "state-def(" + name + ")";
     }
-    virtual std::vector<std::shared_ptr<Rp4TreeNode>> children() const {
+    virtual std::vector<const Rp4TreeNode*> children() const {
         return {
-            std::make_shared<Rp4TreeNode>(&extract), 
-            std::make_shared<Rp4TreeNode>(&transition)
+            dynamic_cast<const Rp4TreeNode*>(&extract), 
+            dynamic_cast<const Rp4TreeNode*>(transition.get())
         };
     }
 };

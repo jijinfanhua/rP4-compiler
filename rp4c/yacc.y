@@ -1,5 +1,5 @@
 %{
-#include "rp4_compiler.h"
+#include "rp4_ast.h"
 #include "yacc.hpp"
 #include <iostream>
 #include <memory>
@@ -34,7 +34,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token ANDANDAND DIVDIVDIV
 
 // type-specific tokens
-%token <sv_str> IDENTIFIER
+%token <sv_str> IDENTIFIER VALUE_STRING
 %token <sv_int> VALUE_INT
 
 %type <sv_header_defs> header_defs
@@ -52,7 +52,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %type <sv_member> member
 %type <sv_field> field
 %type <sv_key> key_def
-%type <sv_transition_entry> transition_entry
+%type <sv_transition_entry> transition_entry direct_entry
 %type <sv_transition_entries> transition_entries
 
 %%
@@ -60,7 +60,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 start:  
         header_defs struct_defs parser_def
     {
-        tree = std::make_unique<Rp4Compiler>($1, $2, $3);
+        tree = std::make_unique<Rp4Ast>($1, $2, $3);
         YYACCEPT;
     }
     ;
@@ -129,6 +129,10 @@ struct_def:
     {
         $$ = Rp4StructDef($2, $4, $6);
     }
+    |   STRUCT HEADERS '{' field_defs '}' IDENTIFIER ';'
+    {
+        $$ = Rp4StructDef("headers", $4, $6, true);
+    }
     ;
 
 parser_def:
@@ -173,7 +177,22 @@ member:
 transition_stmt:
     TRANSITION SELECT '(' field ')' '{' transition_entries '}'
     {
-        $$ = Rp4Transition($4, $7);
+        $$ = std::make_shared<Rp4SelectTransition>($4, $7);
+    }
+    |   TRANSITION direct_entry ';'
+    {
+        $$ = std::make_shared<Rp4DirectTransition>($2);
+    }
+    ;
+
+direct_entry:
+    IDENTIFIER
+    {
+        $$ = Rp4TransitionEntry(std::make_shared<Rp4DefaultKey>(), $1);
+    }
+    |   ACCEPT
+    {
+        $$ = Rp4TransitionEntry(std::make_shared<Rp4DefaultKey>(), "accept", true);
     }
     ;
 
@@ -199,6 +218,10 @@ transition_entry:
     key_def ':' IDENTIFIER ';'
     {
         $$ = Rp4TransitionEntry($1, $3);
+    }
+    |   key_def ':' ACCEPT ';'
+    {
+        $$ = Rp4TransitionEntry($1, "accept", true);
     }
     ;
 

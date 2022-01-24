@@ -88,7 +88,8 @@ extern int yydebug;
      ANDANDAND = 297,
      DIVDIVDIV = 298,
      IDENTIFIER = 299,
-     VALUE_INT = 300
+     VALUE_STRING = 300,
+     VALUE_INT = 301
    };
 #endif
 

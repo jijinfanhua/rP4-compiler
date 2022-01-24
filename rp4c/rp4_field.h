@@ -13,8 +13,8 @@ public:
     virtual std::string toString() const {
         return "field-def(" + name + ")";
     }
-    virtual std::vector<std::shared_ptr<Rp4TreeNode>> children() const {
-        return { type };
+    virtual std::vector<const Rp4TreeNode*> children() const {
+        return { type.get() };
     }
 };
 

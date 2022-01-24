@@ -1,19 +1,13 @@
 #include "rp4_compiler.h"
 
-std::unique_ptr<Rp4Compiler> tree;
-
-std::string get_offset(int width) {
-    return std::string(width, ' ');
-}
-
-void print_node(const Rp4TreeNode* node, int tab) {
-    auto offset = get_offset(tab);
-    tab += 2;
-    for (auto c : node->children()) {
-        print_node(c.get(), tab);
+int main(int argc, char* argv[]) {
+    const char* input = argv[1];
+    const char* output = (argc > 2 ? argv[2] : "");
+    Rp4Compiler compiler;
+    if (compiler.parse(input) == 0) {
+        compiler.print(output);
+    } else {
+        std::cout << "parse error" << std::endl;
     }
-}
-
-void print_tree(const Rp4Compiler* compiler) {
-    print_node(compiler, 0);
+    return 0;
 }
