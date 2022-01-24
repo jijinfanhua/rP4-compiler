@@ -40,7 +40,7 @@ hex_int 0x[0-9a-fA-F]+
 bin_int 0b[01]+
 value_float {sign}?{digit}+\.({digit}+)?
 value_string '[^']*'
-single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
+single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"|"+"|"-"|"/"|"&"|"|"|"^"|"~"|"!"
 
 %x comment
 
@@ -89,7 +89,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
 "switch" { return SWITCH; }
 "hit" { return HIT; }
 "miss" { return MISS; }
-"standard_metadata" { return STANDARD_METADATA; }
+"isValid" { return IS_VALID; }
     /* operators */
 ">=" { return GEQ; }
 "<=" { return LEQ; }

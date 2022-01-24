@@ -3,6 +3,8 @@
 #include "rp4_header.h"
 #include "rp4_struct.h"
 #include "rp4_parser.h"
+#include "rp4_action.h"
+#include "rp4_table.h"
 
 class Rp4SemValue {
 public:
@@ -24,8 +26,30 @@ public:
     Rp4Member sv_member;
     Rp4Field sv_field;
     std::shared_ptr<Rp4Key> sv_key;
+    std::vector<std::shared_ptr<Rp4Key>> sv_keys;
     Rp4TransitionEntry sv_transition_entry;
     std::vector<Rp4TransitionEntry> sv_transition_entries;
+    Rp4ActionsDef sv_actions_def;
+    Rp4ActionDef sv_action_def;
+    std::vector<Rp4ActionDef> sv_action_defs;
+    Rp4Expression sv_expression;
+    std::vector<Rp4Expression> sv_expressions;
+    std::shared_ptr<Rp4LValue> sv_lvalue;
+    std::shared_ptr<Rp4Operation> sv_operation;
+    std::shared_ptr<Rp4Operand> sv_operand;
+    Rp4Operator sv_op;
+    Rp4TablesDef sv_tables_def;
+    Rp4TableDef sv_table_def;
+    std::vector<Rp4TableDef> sv_table_defs;
+    Rp4TableKeyDef sv_table_key_def;
+    Rp4KeyEntry sv_key_entry;
+    std::vector<Rp4KeyEntry> sv_key_entries;
+    Rp4MatchType sv_match_type;
+    std::shared_ptr<Rp4TableOptionalStmt> sv_table_optional_stmt;
+    std::vector<std::shared_ptr<Rp4TableOptionalStmt>> sv_table_optional_stmts;
+    Rp4MatchEntry sv_match_entry;
+    std::vector<Rp4MatchEntry> sv_match_entries;
+    Rp4MatchKey sv_match_key;
 };
 
 class Rp4Ast : public Rp4TreeNode {
@@ -33,22 +57,30 @@ public:
     std::vector<Rp4HeaderDef> header_defs;
     std::vector<Rp4StructDef> struct_defs;
     Rp4ParserDef parser_def;
+    Rp4ActionsDef actions_def;
+    Rp4TablesDef tables_def;
 
     Rp4Ast(
         std::vector<Rp4HeaderDef> _header_defs,
         std::vector<Rp4StructDef> _struct_defs,
-        Rp4ParserDef _parser_def
+        Rp4ParserDef _parser_def,
+        Rp4ActionsDef _actions_def,
+        Rp4TablesDef _tables_def
         ) : 
         header_defs(std::move(_header_defs)), 
         struct_defs(std::move(_struct_defs)),
-        parser_def(std::move(_parser_def))
+        parser_def(std::move(_parser_def)),
+        actions_def(std::move(_actions_def)),
+        tables_def(std::move(_tables_def))
         {}
     
     virtual std::vector<const Rp4TreeNode*> children() const {
         auto dst = mapped(header_defs);
         add(dst, struct_defs);
         add(dst, parser_def);
-        return dst;
+        add(dst, actions_def);
+        add(dst, tables_def);
+        return std::move(dst);
     }
     virtual std::string toString() const {
         return "Rp4Ast";

@@ -27,7 +27,8 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token TABLES TABLE KEY SIZE DEFAULT_ACTION ENTRIES
 %token EXACT TERNARY LPM
 %token CONTROL MATCHER EXECUTOR SWITCH HIT MISS
-%token STANDARD_METADATA
+%token IS_VALID
+
 
 // non-keywords
 %token EQU NEQ LEQ GEQ T_EOF
@@ -39,7 +40,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 
 %type <sv_header_defs> header_defs
 %type <sv_header_def> header_def
-%type <sv_field_defs> field_defs
+%type <sv_field_defs> field_defs parameters
 %type <sv_field_def> field_def
 %type <sv_type> type_def
 %type <sv_struct_defs> struct_defs
@@ -54,13 +55,35 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %type <sv_key> key_def
 %type <sv_transition_entry> transition_entry direct_entry
 %type <sv_transition_entries> transition_entries
+%type <sv_actions_def> actions_def
+%type <sv_action_defs> action_defs
+%type <sv_action_def> action_def
+%type <sv_expression> expression
+%type <sv_expressions> expressions
+%type <sv_lvalue> lvalue
+%type <sv_operation> operation
+%type <sv_operand> operand
+%type <sv_op> op
+%type <sv_tables_def> tables_def
+%type <sv_table_def> table_def
+%type <sv_table_defs> table_defs
+%type <sv_table_key_def> table_key_def
+%type <sv_key_entry> key_entry
+%type <sv_key_entries> key_entries
+%type <sv_match_type> match_type
+%type <sv_keys> key_defs
+%type <sv_table_optional_stmt> table_optional_stmt
+%type <sv_table_optional_stmts> table_optional_stmts
+%type <sv_match_entry> match_entry
+%type <sv_match_entries> match_entries
+%type <sv_match_key> match_key
 
 %%
 
 start:  
-        header_defs struct_defs parser_def
+        header_defs struct_defs parser_def actions_def tables_def
     {
-        tree = std::make_unique<Rp4Ast>($1, $2, $3);
+        tree = std::make_unique<Rp4Ast>($1, $2, $3, $4, $5);
         YYACCEPT;
     }
     ;
@@ -201,6 +224,10 @@ field:
     {
         $$ = Rp4Field($1, $3, $5);
     }
+    |   IDENTIFIER '.' IDENTIFIER '.' IS_VALID '(' ')'
+    {
+        $$ = Rp4Field($1, $3, "isValid");
+    }
     ;
 
 transition_entries:
@@ -215,7 +242,7 @@ transition_entries:
     ;
 
 transition_entry:
-    key_def ':' IDENTIFIER ';'
+        key_def ':' IDENTIFIER ';'
     {
         $$ = Rp4TransitionEntry($1, $3);
     }
@@ -229,6 +256,14 @@ key_def:
         VALUE_INT
     {
         $$ = std::make_shared<Rp4ExactKey>($1);
+    }
+    |   TRUE
+    {
+        $$ = std::make_shared<Rp4ExactKey>(1);
+    }
+    |   FALSE
+    {
+        $$ = std::make_shared<Rp4ExactKey>(0);
     }
     |   VALUE_INT ANDANDAND VALUE_INT
     {
@@ -247,5 +282,315 @@ key_def:
         $$ = std::make_shared<Rp4DefaultKey>();
     }
     ;
+
+actions_def:
+    ACTIONS '{' action_defs '}'
+    {
+        $$ = Rp4ActionsDef($3);
+    }
+    ;
+
+action_defs:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   action_defs action_def
+    {
+        $$.push_back($2);
+    }
+    ;
+
+action_def:
+    ACTION IDENTIFIER '(' parameters ')' '{' expressions '}'
+    {
+        $$ = Rp4ActionDef($2, $4, $7);
+    }
+    |   ACTION NOACTION '(' ')' '{' '}'
+    {
+        $$ = Rp4ActionDef("NoAction", {}, {}, true);
+    }
+    ;
+
+parameters:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   field_def
+    {
+        $$ = { $1 };
+    }
+    |   parameters ',' field_def
+    {
+        $$.push_back($3);
+    }
+    ;
+
+expressions:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   expressions expression
+    {
+        $$.push_back($2);
+    }
+    ;
+
+expression:
+    lvalue '=' operation ';'
+    {
+        $$ = Rp4Expression($1, $3);
+    }
+    ;
+
+lvalue:
+        member
+    {
+        $$ = std::make_shared<Rp4MetaLValue>($1);
+    }
+    |   field
+    {
+        $$ = std::make_shared<Rp4HeaderLValue>($1);
+    }
+    ;
+
+operation:
+        operand
+    {
+        $$ = std::move($1);
+    }
+    |   '(' operation op operation ')'
+    {
+        $$ = std::make_shared<Rp4Binary>($3, $2, $4);
+    }
+    ;
+
+op:
+        '+'
+    {
+        $$ = OP_PLUS;
+    }
+    |   '-'
+    {
+        $$ = OP_MINUS;
+    }
+    |   '*'
+    {
+        $$ = OP_MUL;
+    }
+    |   '/'
+    {
+        $$ = OP_DIV;
+    }
+    |   '&'
+    {
+        $$ = OP_AND;
+    }
+    |   '|'
+    {
+        $$ = OP_OR;
+    }
+    |   '^'
+    {
+        $$ = OP_XOR;
+    }
+    |   '~'
+    {
+        $$ = OP_NOT;
+    }
+    |   '!'
+    {
+        $$ = OP_NOTL;
+    }
+    |   EQU
+    {
+        $$ = OP_EQ;
+    }
+    |   NEQ
+    {
+        $$ = OP_NE;
+    }
+    |   '<'
+    {
+        $$ = OP_LT;
+    }
+    |   '>'
+    {
+        $$ = OP_GT;
+    }
+    |   LEQ
+    {
+        $$ = OP_LE;
+    }
+    |   GEQ
+    {
+        $$ = OP_GE;
+    }
+    ;
+
+operand:
+        lvalue
+    {
+        $$ = std::move($1);
+    }
+    |   VALUE_INT
+    {
+        $$ = std::make_shared<Rp4Literal>($1);
+    }
+    |   IDENTIFIER
+    {
+        $$ = std::make_shared<Rp4Parameter>($1);
+    }
+    |   TRUE
+    {
+        $$ = std::make_shared<Rp4Literal>(1);
+    }
+    |   FALSE
+    {
+        $$ = std::make_shared<Rp4Literal>(0);
+    }
+    ;
+
+tables_def:
+    TABLES '{' table_defs '}'
+    {
+        $$ = Rp4TablesDef($3);
+    }
+    ;
+
+table_defs:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   table_defs table_def
+    {
+        $$.push_back($2);
+    }
+    ;
+
+table_def:
+    TABLE IDENTIFIER '{' table_key_def table_optional_stmts '}'
+    {
+        $$ = Rp4TableDef($2, $4, $5);
+    }
+    ;
+
+table_key_def:
+    KEY '=' '{' key_entries '}'
+    {
+        $$ = Rp4TableKeyDef($4);
+    }
+    ;
+
+key_entries:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   key_entries key_entry
+    {
+        $$.push_back($2);
+    }
+    ;
+
+key_entry:
+    lvalue ':' match_type ';'
+    {
+        $$ = Rp4KeyEntry($1, $3);
+    }
+    ;
+
+match_type:
+        EXACT
+    {
+        $$ = MT_EXACT;
+    }
+    |   TERNARY
+    {
+        $$ = MT_TERNARY;
+    }
+    |   LPM
+    {
+        $$ = MT_LPM;
+    }
+    ;
+
+table_optional_stmts:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   table_optional_stmts table_optional_stmt
+    {
+        $$.push_back($2);
+    }
+    ;
+
+table_optional_stmt:
+        SIZE '=' VALUE_INT ';'
+    {
+        $$ = std::make_shared<Rp4TableSizeStmt>($3);
+    }
+    |   ENTRIES '=' '{' match_entries '}'
+    {
+        $$ = std::make_shared<Rp4TableEntriesStmt>($4);
+    }
+    |   DEFAULT_ACTION '=' IDENTIFIER ';'
+    {
+        $$ = std::make_shared<Rp4DefaultActionStmt>($3);
+    }
+    |   DEFAULT_ACTION '=' NOACTION ';'
+    {
+        $$ = std::make_shared<Rp4DefaultActionStmt>("NoAction");
+    }
+    ;
+
+match_entries:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   match_entries match_entry
+    {
+        $$.push_back($2);
+    }
+    ;
+
+match_entry:
+    match_key ':' IDENTIFIER ';'
+    {
+        $$ = Rp4MatchEntry($1, $3);
+    }
+    |   match_key ':' NOACTION ';'
+    {
+        $$ = Rp4MatchEntry($1, "NoAction");
+    }
+    ;
+
+match_key:
+    '(' key_defs ')'
+    {
+        $$ = Rp4MatchKey($2);
+    }
+    ;
+
+key_defs:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   key_def
+    {
+        $$ = { $1 };
+    }
+    |   key_defs ',' key_def
+    {
+        $$.push_back($3);
+    }
+    ;
+
 
 %%

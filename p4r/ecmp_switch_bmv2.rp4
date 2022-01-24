@@ -231,7 +231,7 @@ tables {
 			standard_metadata.ingress_port: exact;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table port_vlan_to_bd_mapping {
 		key = {
@@ -240,7 +240,7 @@ tables {
 			hdr.vlan_tag.vid: ternary;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table validate_ethernet {
 		key = {
@@ -249,7 +249,7 @@ tables {
 			hdr.vlan_tag.isValid(): ternary;
 		}
 		size = 512;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table validate_ipv4 {
 		key = {
@@ -258,7 +258,7 @@ tables {
 			hdr.ipv4.ttl: ternary;
 		}
 		size = 512;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table validate_ipv6 {
 		key = {
@@ -266,26 +266,26 @@ tables {
 			hdr.ipv6.hop_limit: ternary;
 		}
 		size = 512;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table rmac {
 		key = {
 			lkp_0.mac_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table tbl_act {
 		key = {
 		}
 		size = 1024;
-		default_action = act_5();
+		default_action = act_5;
 	}
 	table tbl_act_0 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_1();
+		default_action = act_1;
 	}
 	table fib_fib {
 		key = {
@@ -293,19 +293,19 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = fib_fib_miss();
+		default_action = fib_fib_miss;
 	}
 	table tbl_act_1 {
 		key = {
 		}
 		size = 1024;
-		default_action = act();
+		default_action = act;
 	}
 	table tbl_act_2 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_0();
+		default_action = act_0;
 	}
 	table fib_fib_lpm {
 		key = {
@@ -313,13 +313,13 @@ tables {
 			lkp_0.ipv4_dst_addr: lpm;
 		}
 		size = 1024;
-		default_action = fib_fib_miss();
+		default_action = fib_fib_miss;
 	}
 	table tbl_act_3 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_4();
+		default_action = act_4;
 	}
 	table fibv6_fib {
 		key = {
@@ -327,19 +327,19 @@ tables {
 			lkp_0.ipv6_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = fibv6_fib_miss();
+		default_action = fibv6_fib_miss;
 	}
 	table tbl_act_4 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_2();
+		default_action = act_2;
 	}
 	table tbl_act_5 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_3();
+		default_action = act_3;
 	}
 	table fibv6_fib_lpm {
 		key = {
@@ -347,13 +347,13 @@ tables {
 			lkp_0.ipv6_dst_addr: lpm;
 		}
 		size = 1024;
-		default_action = fibv6_fib_miss();
+		default_action = fibv6_fib_miss;
 	}
 	table tbl_act_6 {
 		key = {
 		}
 		size = 1024;
-		default_action = act_6();
+		default_action = act_6;
 	}
 	table ecmp {
 		key = {
@@ -365,7 +365,7 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table ip_rewrite {
 		key = {
@@ -373,10 +373,10 @@ tables {
 			hdr.ipv6.isValid(): exact;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 		entries = {
-			(0x01, 0x00): rewrite_ipv4();
-			(0x00, 0x01): rewrite_ipv6();
+			(0x01, 0x00): rewrite_ipv4;
+			(0x00, 0x01): rewrite_ipv6;
 		}
 	}
 	table smac_rewrite {
@@ -384,7 +384,7 @@ tables {
 			meta.metadata_t_bd: exact;
 		}
 		size = 1024;
-		default_action = NoAction();
+		default_action = NoAction;
 	}
 	table dmac {
 		key = {
@@ -392,7 +392,7 @@ tables {
 			hdr.ethernet.dst_addr: exact;
 		}
 		size = 1024;
-		default_action = dmac_miss();
+		default_action = dmac_miss;
 	}
 }
 

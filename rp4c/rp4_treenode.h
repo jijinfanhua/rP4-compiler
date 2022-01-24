@@ -17,22 +17,39 @@ public:
 }; 
 
 template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
-std::vector<const Rp4TreeNode*> mapped(const std::vector<T>& v) {
-    std::vector<const Rp4TreeNode*> dst;
-    for (auto& x : v) {
-        dst.push_back(dynamic_cast<const Rp4TreeNode*>(&x));
-    }
-    return std::move(dst);
+void add(std::vector<const Rp4TreeNode*>& dst, const T& v) {
+    dst.push_back(dynamic_cast<const Rp4TreeNode*>(&v));
+}
+
+template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
+void add(std::vector<const Rp4TreeNode*>& dst, const std::shared_ptr<T>& v) {
+    dst.push_back(dynamic_cast<const Rp4TreeNode*>(v.get()));
 }
 
 template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
 void add(std::vector<const Rp4TreeNode*>& dst, const std::vector<T>& v) {
     for (auto& x : v) {
-        dst.push_back(dynamic_cast<const Rp4TreeNode*>(&x));
+        add(dst, x);
     }
 }
 
 template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
-void add(std::vector<const Rp4TreeNode*>& dst, const T& v) {
-    dst.push_back(dynamic_cast<const Rp4TreeNode*>(&v));
+void add(std::vector<const Rp4TreeNode*>& dst, const std::vector<std::shared_ptr<T>>& v) {
+    for (auto& x : v) {
+        add(dst, x);
+    }
+}
+
+template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
+std::vector<const Rp4TreeNode*> mapped(const std::vector<T>& v) {
+    std::vector<const Rp4TreeNode*> dst;
+    add(dst, v);
+    return std::move(dst);
+}
+
+template <class T, std::enable_if_t<std::is_base_of_v<Rp4TreeNode, T>, bool> = true>
+std::vector<const Rp4TreeNode*> mapped(const std::vector<std::shared_ptr<T>>& v) {
+    std::vector<const Rp4TreeNode*> dst;
+    add(dst, v);
+    return std::move(dst);
 }

@@ -79,7 +79,7 @@ extern int yydebug;
      SWITCH = 288,
      HIT = 289,
      MISS = 290,
-     STANDARD_METADATA = 291,
+     IS_VALID = 291,
      EQU = 292,
      NEQ = 293,
      LEQ = 294,

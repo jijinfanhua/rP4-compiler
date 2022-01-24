@@ -96,7 +96,7 @@ std::ostream & P4Pipelines::out_default_action(std::ostream & out, const P4Table
         return x == default_entry.action_id;
     }); pos != std::end(table.action_ids)) {
         auto ds = *std::next(std::begin(table.actions), pos - std::begin(table.action_ids));
-        out << actions.translate_name(ds) << "(";
+        out << actions.translate_name(ds) /*<< "(";
         for (bool first = true; auto& d : default_entry.action_data) {
             if (!first) {
                 out << ", ";
@@ -105,7 +105,7 @@ std::ostream & P4Pipelines::out_default_action(std::ostream & out, const P4Table
             }
             out << d;
         }
-        out << ")";
+        out << ")"*/;
     }
     return out;
 }

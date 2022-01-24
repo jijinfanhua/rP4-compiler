@@ -2,7 +2,7 @@ LEX      = flex
 YACC     = bison
 CC       = g++
 CFLAGS   = -std=gnu++2a
-HEADERS  = $(wildcard ./*.h)
+HEADERS  = $(wildcard ./*.h) $(wildcard ./*.hpp)
 SOURCE   = rp4_compiler.cpp
 TARGET   = rp4_compiler.exe
 CMP_OBJ  = rp4_compiler.o

@@ -13,6 +13,9 @@ public:
     virtual std::string toString() const {
         return "extract";
     }
+    virtual std::vector<const Rp4TreeNode*> children() const {
+        return { dynamic_cast<const Rp4TreeNode*>(&target) };
+    }
 };
 
 class Rp4TransitionEntry : public Rp4TreeNode {
@@ -45,6 +48,13 @@ public:
     virtual std::string toString() const {
         return "transition-select";
     }
+    virtual std::vector<const Rp4TreeNode*> children() const {
+        std::vector<const Rp4TreeNode*> dst = {
+            dynamic_cast<const Rp4TreeNode*>(&target)
+        };
+        add(dst, entries);
+        return std::move(dst);
+    }
 };
 
 class Rp4DirectTransition : public Rp4Transition {
@@ -54,6 +64,9 @@ public:
     Rp4DirectTransition(Rp4TransitionEntry _entry): entry(std::move(_entry)) {}
     virtual std::string toString() const {
         return "transition-direct";
+    }
+    virtual std::vector<const Rp4TreeNode*> children() const {
+        return { dynamic_cast<const Rp4TreeNode*>(&entry) };
     }
 };
 
