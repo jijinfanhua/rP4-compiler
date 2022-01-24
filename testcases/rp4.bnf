@@ -36,13 +36,15 @@
                 '{' [{<expression>}] '}'
 
 <expression> ::= <lvalue> '=' <ops> ';'
-                | <action_name> ';' # function call
+                | <action_name> '(' [<parameter_name> ',' | <integer> ','] [<parameter_name> | <integer>] ')' ';' # function call
 <lvalue> ::= <instance_name>'.'<member_name>['.'<field_name>]
 <oprand> ::= <integer>
             | <instance_name>'.'<member_name>['.'<field_name>]
             | <parameter_name>
 <ops> ::= [<op>] <operand>
+        | [<op>] <ops>
         | <operand> <op> <ops>
+        | '(' <ops> ')'
 <op> ::= '+' | '-' | '*' | '/' | '&' | '|' | '^' | '>' | '>=' | '<' | '<=' | '==' | '!=' | '~' | '!'
 
 # table
