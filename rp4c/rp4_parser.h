@@ -17,7 +17,7 @@ public:
     virtual std::string toString() const {
         return "parser-def(" + name + ")";
     }
-    virtual std::vector<std::shared_ptr<Rp4TreeNode>> children() const {
+    virtual std::vector<const Rp4TreeNode*> children() const {
         return mapped(states);
     }
 };

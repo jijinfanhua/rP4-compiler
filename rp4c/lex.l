@@ -10,7 +10,7 @@
 
 %{
 
-#include "rp4_compiler.h"
+#include "rp4_ast.h"
 #include "yacc.hpp"
 #include <iostream>
 
@@ -45,7 +45,6 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
 %x comment
 
 %%
-
     /* block comment */
 "/*" { BEGIN(comment); }
 <comment>"*/" { BEGIN(INITIAL); }
@@ -56,9 +55,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
     /* white space and new line */
 {white_space} { /* ignore white space */ }
 {new_line} { /* ignore new line */ }
-
     /* keywords */
-
 "bit" { return BIT; }
 "struct" { return STRUCT; }
 "true" { return TRUE; }
@@ -93,7 +90,6 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
 "hit" { return HIT; }
 "miss" { return MISS; }
 "standard_metadata" { return STANDARD_METADATA; }
-
     /* operators */
 ">=" { return GEQ; }
 "<=" { return LEQ; }
@@ -101,15 +97,13 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"
 "==" { return EQU; }
 "&&&" { return ANDANDAND; }
 "///" { return DIVDIVDIV; }
-
 {single_op} { return yytext[0]; }
     /* id */
 {identifier} {
     yylval->sv_str = yytext;
     return IDENTIFIER;
 }
-
-/* literals */
+    /* literals */
 {value_int} {
     yylval->sv_int = atoi(yytext);
     return VALUE_INT;

@@ -1,2 +1,5 @@
 .vscode
 *.exe
+*.o
+rp4c/*.rp4
+rp4c/*.rp4c
