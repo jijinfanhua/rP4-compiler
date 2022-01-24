@@ -25,8 +25,8 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token DEFAULT ACCEPT EXTRACT SELECT
 %token ACTIONS ACTION NOACTION
 %token TABLES TABLE KEY SIZE DEFAULT_ACTION ENTRIES
-%token EXACT TERNARY LPM
-%token CONTROL MATCHER EXECUTOR SWITCH HIT MISS
+%token EXACT TERNARY LPM STAGE
+%token CONTROL MATCHER EXECUTOR SWITCH HIT MISS NONE
 %token IS_VALID
 
 
@@ -38,6 +38,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token <sv_str> IDENTIFIER VALUE_STRING
 %token <sv_int> VALUE_INT
 
+%type <sv_str> stage_executor_entry_left stage_name
 %type <sv_header_defs> header_defs
 %type <sv_header_def> header_def
 %type <sv_field_defs> field_defs parameters
@@ -62,6 +63,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %type <sv_expressions> expressions
 %type <sv_lvalue> lvalue
 %type <sv_operation> operation
+%type <sv_operations> operations
 %type <sv_operand> operand
 %type <sv_op> op
 %type <sv_tables_def> tables_def
@@ -77,13 +79,26 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %type <sv_match_entry> match_entry
 %type <sv_match_entries> match_entries
 %type <sv_match_key> match_key
+%type <sv_pipeline> pipeline
+%type <sv_stage_def> stage_def
+%type <sv_stage_defs> stage_defs
+%type <sv_stage_parser> stage_parser
+%type <sv_stage_parser_header> stage_parser_header
+%type <sv_stage_parser_headers> stage_parser_headers
+%type <sv_stage_matcher> stage_matcher
+%type <sv_switch_entry> switch_entry
+%type <sv_switch_entries> switch_entries
+%type <sv_switch_value> switch_value
+%type <sv_stage_executor> stage_executor
+%type <sv_stage_executor_entry> stage_executor_entry
+%type <sv_stage_executor_entries> stage_executor_entries
 
 %%
 
 start:  
-        header_defs struct_defs parser_def actions_def tables_def
+        header_defs struct_defs parser_def actions_def tables_def pipeline pipeline
     {
-        tree = std::make_unique<Rp4Ast>($1, $2, $3, $4, $5);
+        tree = std::make_unique<Rp4Ast>($1, $2, $3, $4, $5, $6, $7);
         YYACCEPT;
     }
     ;
@@ -592,5 +607,162 @@ key_defs:
     }
     ;
 
+pipeline:
+    CONTROL IDENTIFIER '{' stage_defs '}'
+    {
+        $$ = Rp4Pipeline($2, $4);
+    }
+    ;
+
+stage_defs:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   stage_defs stage_def
+    {
+        $$.push_back($2);
+    }
+    ;
+
+stage_def:
+    STAGE IDENTIFIER '{' stage_parser stage_matcher stage_executor '}'
+    {
+        $$ = Rp4StageDef($2, $4, $5, $6);
+    }
+    ;
+
+stage_parser:
+    PARSER '{' stage_parser_headers '}' ';'
+    {
+        $$ = Rp4StageParser($3);
+    }
+    ;
+
+stage_parser_headers:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   stage_parser_headers stage_parser_header
+    {
+        $$.push_back($2);
+    }
+    ;
+
+stage_parser_header:
+    IDENTIFIER ';'
+    {
+        $$ = Rp4StageParserHeader($1);
+    }
+    ;
+
+stage_matcher:
+    MATCHER '{' SWITCH '(' operations ')' '{' switch_entries '}' '}' ';'
+    {
+        $$ = Rp4StageMatcher($5, $8);
+    }
+    ;
+
+operations:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   operation
+    {
+        $$ = { $1 };
+    }
+    |   operations ',' operation
+    {
+        $$.push_back($3);
+    }
+    ;
+
+switch_entries:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   switch_entries switch_entry
+    {
+        $$.push_back($2);
+    }
+    ;
+
+switch_entry:
+    key_def ':' switch_value ';'
+    {
+        $$ = Rp4SwitchEntry($1, $3);
+    }
+    ;
+
+switch_value:
+        TABLE '(' IDENTIFIER ')'
+    {
+        $$ = std::make_shared<Rp4SwitchTableStmt>($3);
+    }
+    |   STAGE '(' IDENTIFIER ')'
+    {
+        $$ = std::make_shared<Rp4SwitchStageStmt>($3);
+    }
+    |   NOACTION
+    {
+        $$ = std::make_shared<Rp4SwitchDefaultStmt>();
+    }
+    |   NONE
+    {
+        $$ = std::make_shared<Rp4SwitchDefaultStmt>();
+    }
+    ;
+
+stage_executor:
+    EXECUTOR '{' stage_executor_entries '}' ';'
+    {
+        $$ = Rp4StageExecutor($3);
+    }
+    ;
+
+stage_executor_entries:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   stage_executor_entries stage_executor_entry
+    {
+        $$.push_back($2);
+    }
+    ;
+
+stage_executor_entry:
+    stage_executor_entry_left ':' stage_name ';'
+    {
+        $$ = Rp4StageExecutorEntry($1, $3);
+    }
+    ;
+
+stage_executor_entry_left:
+        IDENTIFIER
+    |   HIT
+    {
+        $$ = "__HIT__";
+    }
+    |   MISS
+    {
+        $$ = "__MISS__";
+    }
+    |   NOACTION 
+    {
+        $$ = "NoAction";
+    }
+    ;
+
+stage_name:
+        IDENTIFIER
+    |   NONE
+    {
+        $$ = "None";
+    }
+    ;
 
 %%

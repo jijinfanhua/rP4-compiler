@@ -13,16 +13,16 @@ YACC_OBJ = yacc.o
 YACC_SRC = yacc.y
 YACC_CPP = yacc.cpp
 
-all: ${LEX_OBJ} ${YACC_OBJ} ${CMP_OBJ}
+all: ${YACC_OBJ} ${LEX_OBJ}  ${CMP_OBJ}
 	${CC} ${CFLAGS} ${LEX_OBJ} ${YACC_OBJ} ${CMP_OBJ} -o ${TARGET}
-
-${LEX_OBJ}: ${LEX_SRC} ${HEADERS}
-	${LEX} ${LEX_SRC}
-	${CC} ${CFLAGS} -c ${LEX_C}
 
 ${YACC_OBJ}: ${YACC_SRC} ${HEADERS}
 	${YACC} -d ${YACC_SRC} -o ${YACC_CPP}
 	${CC} ${CFLAGS} -c ${YACC_CPP}
+
+${LEX_OBJ}: ${LEX_SRC} ${HEADERS}
+	${LEX} ${LEX_SRC}
+	${CC} ${CFLAGS} -c ${LEX_C}
 
 ${CMP_OBJ}: ${SOURCE} ${HEADERS}
 	${CC} ${CFLAGS} -c ${SOURCE}

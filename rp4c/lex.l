@@ -87,9 +87,11 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"|"+"|"-"|"/
 "matcher" { return MATCHER; }
 "executor" { return EXECUTOR; }
 "switch" { return SWITCH; }
-"hit" { return HIT; }
-"miss" { return MISS; }
+"__HIT__" { return HIT; }
+"__MISS__" { return MISS; }
 "isValid" { return IS_VALID; }
+"None" { return NONE; }
+"stage" { return STAGE; }
     /* operators */
 ">=" { return GEQ; }
 "<=" { return LEQ; }
