@@ -18,7 +18,7 @@
                       {<expression>} <extract_statement> <transition_statement>
                     | <extract_statement> {<expression>} <transition_statement>
                 '}'
-<extract_statement> ::= <parameter>'.extract(' <instance_name>'.'<member_name> ');'
+<extract_statement> ::= <parameter>'.extract(' {<instance_name>'.'<member_name> ','} [<instance_name>'.'<member_name>] ');'
 <transition_statement> ::= 'transition select(' <instance_name>'.'<member_name>.<field_name> ') {' {<transition_entry>} '}'
                         |   'transtioh accept;'
                         |   'transition reject;'
@@ -68,7 +68,7 @@
 <egress_def> ::= 'control' <egress_name> '{' [{<stage_def>}] '}'
 <stage_def> ::= 'stage' <stage_name> '{' <parser_statement> <matcher_def> <executor_def> '}'
 <parser_statement> ::= 'parser' '{' {<instance_name>'.'<member_name> ';'} '}'
-<matcher_def> ::= 'matcher {' 'switch(' {<ops>','} <ops>')' '{' <switch_entry>  '}' '}'
+<matcher_def> ::= 'matcher {' 'switch(' {<ops>','} <ops>')' '{' [<switch_entry>]  '}' '}'
 <switch_entry> ::= <switch_key> : <switch_value> ';'
 <switch_key> ::= <integer> | '*'
 <switch_value> ::= 'table(' <table_name> ')'
