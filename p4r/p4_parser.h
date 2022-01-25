@@ -49,10 +49,17 @@ std::ostream & operator<<(std::ostream & out, P4Parsers const & vp) {
                 out << "\t\tpacket.extract(hdr." << op.parameter_name << ");" << std::endl;
             }
             if (ps.transition_key.size() > 0) {
-                auto& tk = ps.transition_key[0];
-                out << "\t\ttransition select(hdr";
-                for (auto & v : tk.value) {
-                    out << "." << v;
+                out << "\t\ttransition select(";
+                for (bool first = true; auto& tk : ps.transition_key) {
+                    if (!first) {
+                        out << ", ";
+                    } else {
+                        first = false;
+                    }
+                    out << "hdr";
+                    for (auto & v : tk.value) {
+                        out << "." << v;
+                    }
                 }
                 out << ") {" << std::endl;
                 for (auto & tr : ps.transitions) {

@@ -12,7 +12,9 @@ class Rp4Operand : public Rp4Operation {
 };
 
 class Rp4LValue : public Rp4Operand {
-
+public:
+    virtual bool isMeta() { return false; }
+    virtual bool isHeader() { return false; }
 };
 
 class Rp4MetaLValue : public Rp4LValue {
@@ -26,6 +28,7 @@ public:
     virtual std::vector<const Rp4TreeNode*> children() const {
         return { dynamic_cast<const Rp4TreeNode*>(&field) };
     }
+    virtual bool isMeta() { return true; }
 };
 
 class Rp4HeaderLValue : public Rp4LValue {
@@ -39,4 +42,5 @@ public:
     virtual std::vector<const Rp4TreeNode*> children() const {
         return { dynamic_cast<const Rp4TreeNode*>(&field) };
     }
+    virtual bool isHeader() { return true; }
 };

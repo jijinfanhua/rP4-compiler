@@ -61,6 +61,9 @@ public:
     std::map<std::string, std::string> next_tables;
     P4DefaultEntry default_entry;
     std::vector<P4Entry> entries;
+    bool is_empty() const { 
+        return key.size() == 0 && actions.size() == 1;
+    }
 };
 
 class P4Conditional {
@@ -105,7 +108,10 @@ std::ostream & P4Pipelines::out_default_action(std::ostream & out, const P4Table
             }
             out << d;
         }
-        out << ")"*/;
+        out << ")"
+        NOTE: we do not support parameters in default actions or actions in const entries
+        */
+        ;
     }
     return out;
 }

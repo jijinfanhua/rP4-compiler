@@ -13,6 +13,7 @@
 **rP4->JSON 控制器需要的信息定义** (2022.01.19)
 
 *Global*
+
 - SRAM: array, SRAM_NUM_ALL
     - width: SRAM_WIDTH
     - depth: SRAM_DEPTH

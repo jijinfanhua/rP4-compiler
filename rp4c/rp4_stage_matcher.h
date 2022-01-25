@@ -29,11 +29,12 @@ public:
 };
 
 
-class Rp4SwitchDefaultStmt : public Rp4SwitchValue {
+class Rp4SwitchActionStmt : public Rp4SwitchValue {
 public:
-    Rp4SwitchDefaultStmt() {}
+    std::string name;
+    Rp4SwitchActionStmt() {}
     virtual std::string toString() const {
-        return "switch-value:NoAction";
+        return "switch-value:action(" + name + ")";
     }
 };
 

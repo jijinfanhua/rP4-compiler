@@ -706,11 +706,11 @@ switch_value:
     {
         $$ = std::make_shared<Rp4SwitchStageStmt>($3);
     }
-    |   NOACTION
+    |   ACTION '(' IDENTIFIER ')'
     {
-        $$ = std::make_shared<Rp4SwitchDefaultStmt>();
+        $$ = std::make_shared<Rp4SwitchActionStmt>($3);
     }
-    |   NONE
+    |   ACTION '(' NOACTION ')'
     {
         $$ = std::make_shared<Rp4SwitchDefaultStmt>();
     }
