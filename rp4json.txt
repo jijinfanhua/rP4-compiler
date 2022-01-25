@@ -1,0 +1,129 @@
+可用资源
+一共有【4】个簇
+一个簇有【256】个SRAM和【128】个TCAM和【4】个processor
+每个SRAM有【1024】行，每行的位宽【128】
+每个TCAM有【1024】行，每行的位宽【64】
+
+Egress 接在 Ingress 后面 stage
+
+json = {
+	"processor_0" : ...,
+	"processor_1" : ...,
+	...
+	"processor_15" : null // empty processor
+}
+
+processor = {
+	parser = {...}
+	gateway = {...}
+	matcher = {...}
+	executor = {...}
+}
+
+parser = {
+	parser_level = INT // max = 【4】
+	levels = [ ...(level)... ]
+}
+
+level = [
+	{
+		parser_tcam_entry = {
+			current_state = INT // state id of the current state
+			entry = INT
+			mask = INT // -1 for exact match
+		}
+		parser_sram_entry = {
+			header_id = INT // the header to extract in this state
+			header_length = INT
+			next_state = INT
+			transition_field_num = INT
+			transition_fields = [
+				(field)...
+			]
+			miss_act = 0 accept | 1 drop // corresponding to the next state
+		}
+	}, ...
+] // first level only has one entry to extract ethernet
+
+field = {
+	header_id = INT
+	field_internal_offset = INT
+	field_length = INT
+	field_type = FIELD | VALID | HIT | MISS
+}
+
+gateway = {
+	expressions = [
+		(expression)...
+	]
+	next_table = {
+		default = (gateway_entry)
+		entries = [
+			{
+				bitmap = INT[0-255]
+				value = (gateway_entry)
+			}
+		], ...
+	}
+}
+
+gateway_entry = {
+	type = TABLE | STAGE | ACTION
+	value = matcher_id | stage_id | action_id
+}
+
+expression = {
+	op = STR (> < >= <= == !=)
+	left = (operand)
+	right = (operand)
+}
+
+operand = constant_op | field_op | expression_op
+
+constant_op = {
+	type = CONST
+	value = INT
+}
+
+field_op = {
+	type = FIELD
+	value = (field)
+}
+
+expression_op = {
+	type = EXPR
+	value = (expression)
+}
+
+matcher = [
+	{
+		id = INT // indepedent in a processor
+		hit_miss = 1 | 0 // if = 1, do __HIT__ or __MISS__ action; if = 0, do the action from table
+		match_type = EXACT | TERNARY | LPM
+		key_memory = {
+			type = TCAM | SRAM
+			config = [ ... ] // matrix of mem id
+			width = INT //  e.g., 200-bit key, 128-bit SRAM_WIDTH, the value is 2
+			depth = INT
+		}
+		value_memory = {
+			config = [ ... ]
+			width = INT
+		}
+		field_infos = [ (field)... ]
+	}, ...
+]
+
+executor = [
+	{
+		id = INT
+		parameter_num = INT
+		action_parameter_lengths = [INT...]
+		primitives = [
+			{
+				lvalue = (field)
+				rvalue = (operand)
+			}, ...
+		]
+	}, ...
+]
