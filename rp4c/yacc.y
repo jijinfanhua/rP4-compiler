@@ -53,6 +53,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %type <sv_transition_stmt> transition_stmt
 %type <sv_member> member
 %type <sv_field> field
+%type <sv_fields> fields
 %type <sv_key> key_def
 %type <sv_transition_entry> transition_entry direct_entry
 %type <sv_transition_entries> transition_entries
@@ -213,13 +214,28 @@ member:
     ;
 
 transition_stmt:
-    TRANSITION SELECT '(' field ')' '{' transition_entries '}'
+    TRANSITION SELECT '(' fields ')' '{' transition_entries '}'
     {
         $$ = std::make_shared<Rp4SelectTransition>($4, $7);
     }
     |   TRANSITION direct_entry ';'
     {
         $$ = std::make_shared<Rp4DirectTransition>($2);
+    }
+    ;
+
+fields:
+        /* epsilon */
+    {
+        $$ = {};
+    }
+    |   field
+    {
+        $$ = { $1 };
+    }
+    |   fields ',' field
+    {
+        $$.push_back($3);
     }
     ;
 
@@ -712,7 +728,7 @@ switch_value:
     }
     |   ACTION '(' NOACTION ')'
     {
-        $$ = std::make_shared<Rp4SwitchDefaultStmt>();
+        $$ = std::make_shared<Rp4SwitchActionStmt>("NoAction");
     }
     ;
 

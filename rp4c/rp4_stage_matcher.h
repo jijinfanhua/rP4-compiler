@@ -33,6 +33,7 @@ class Rp4SwitchActionStmt : public Rp4SwitchValue {
 public:
     std::string name;
     Rp4SwitchActionStmt() {}
+    Rp4SwitchActionStmt(std::string _name) : name(std::move(_name)) {}
     virtual std::string toString() const {
         return "switch-value:action(" + name + ")";
     }

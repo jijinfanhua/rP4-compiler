@@ -35,7 +35,7 @@ level = [
 		parser_sram_entry = {
 			header_id = INT // the header to extract in this state
 			header_length = INT
-			next_state = INT
+			next_state = INT // 0 if next is accept
 			transition_field_num = INT
 			transition_fields = [
 				(field)...
@@ -68,8 +68,8 @@ gateway = {
 }
 
 gateway_entry = {
-	type = TABLE | STAGE | ACTION
-	value = matcher_id | stage_id | action_id
+	type = TABLE | STAGE
+	value = matcher_id | stage_id
 }
 
 expression = {
@@ -99,6 +99,15 @@ matcher = [
 	{
 		id = INT // indepedent in a processor
 		hit_miss = 1 | 0 // if = 1, do __HIT__ or __MISS__ action; if = 0, do the action from table
+		hit_action_id = INT
+		miss_action_Id = INT
+		no_table = 1 | 0 // if = 1, there is no table
+		action_to_proc = [
+			{
+				action_id = INT
+				proc_id = INT
+			}, ...
+		]
 		match_type = EXACT | TERNARY | LPM
 		key_memory = {
 			type = TCAM | SRAM

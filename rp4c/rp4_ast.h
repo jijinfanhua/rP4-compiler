@@ -26,6 +26,7 @@ public:
     std::shared_ptr<Rp4Transition> sv_transition_stmt;
     Rp4Member sv_member;
     Rp4Field sv_field;
+    std::vector<Rp4Field> sv_fields;
     std::shared_ptr<Rp4Key> sv_key;
     std::vector<std::shared_ptr<Rp4Key>> sv_keys;
     Rp4TransitionEntry sv_transition_entry;

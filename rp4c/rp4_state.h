@@ -4,6 +4,7 @@
 #include "rp4_field.h"
 #include "rp4_key.h"
 #include "rp4_treenode.h"
+#include <algorithm>
 
 class Rp4Extract : public Rp4TreeNode {
 public:
@@ -35,23 +36,24 @@ public:
 };
 
 class Rp4Transition : public Rp4TreeNode {
-
+public:
+    virtual bool isSelect() const { return false; }
+    virtual bool isDirect() const { return false; }
 };
 
 class Rp4SelectTransition : public Rp4Transition {
 public:
-    Rp4Field target;
+    std::vector<Rp4Field> targets;
     std::vector<Rp4TransitionEntry> entries;
     Rp4SelectTransition() {}
-    Rp4SelectTransition(Rp4Field _target, std::vector<Rp4TransitionEntry> _entries):
-        target(std::move(_target)), entries(std::move(_entries)) {}
+    Rp4SelectTransition(std::vector<Rp4Field> _targets, std::vector<Rp4TransitionEntry> _entries):
+        targets(std::move(_targets)), entries(std::move(_entries)) {}
+    virtual bool isSelect() const { return true; }
     virtual std::string toString() const {
         return "transition-select";
     }
     virtual std::vector<const Rp4TreeNode*> children() const {
-        std::vector<const Rp4TreeNode*> dst = {
-            dynamic_cast<const Rp4TreeNode*>(&target)
-        };
+        auto dst = mapped(targets);
         add(dst, entries);
         return std::move(dst);
     }
@@ -62,6 +64,7 @@ public:
     Rp4TransitionEntry entry;
     Rp4DirectTransition() {}
     Rp4DirectTransition(Rp4TransitionEntry _entry): entry(std::move(_entry)) {}
+    virtual bool isDirect() const { return true; }
     virtual std::string toString() const {
         return "transition-direct";
     }
@@ -86,5 +89,18 @@ public:
             dynamic_cast<const Rp4TreeNode*>(&extract), 
             dynamic_cast<const Rp4TreeNode*>(transition.get())
         };
+    }
+    bool isEmpty() const {
+        auto is_accept = [](const Rp4TransitionEntry& entry) {
+            return entry.is_accept;
+        };
+        if (transition->isSelect()) {
+            auto& entries = std::static_pointer_cast<Rp4SelectTransition>(transition)->entries;
+            return std::all_of(std::begin(entries), std::end(entries), is_accept);
+        } else if (transition->isDirect()) {
+            auto& entry = std::static_pointer_cast<Rp4DirectTransition>(transition)->entry;
+            return is_accept(entry);
+        }
+        return false;
     }
 };
