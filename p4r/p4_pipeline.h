@@ -99,7 +99,7 @@ std::ostream & P4Pipelines::out_default_action(std::ostream & out, const P4Table
         return x == default_entry.action_id;
     }); pos != std::end(table.action_ids)) {
         auto ds = *std::next(std::begin(table.actions), pos - std::begin(table.action_ids));
-        out << actions.translate_name(ds) /*<< "(";
+        out << actions.translate_name(ds, default_entry.action_id) /*<< "(";
         for (bool first = true; auto& d : default_entry.action_data) {
             if (!first) {
                 out << ", ";
@@ -136,7 +136,7 @@ std::string P4Pipelines::translate_table_name(const std::string& name) const {
             table_rename->add_names(pipe.tables, [](auto& t) { return t.name; });
         }
     }
-    return table_rename->get_name(name);
+    return table_rename->get_name(name, 0);
 }
 
 std::string P4Pipelines::translate_stage_name(const std::string& name) const {
@@ -148,13 +148,13 @@ std::string P4Pipelines::translate_stage_name(const std::string& name) const {
             for (auto& t : pipe.tables) { // direct tables without gateway
                 for (auto [key, value] : t.next_tables) {
                     if (std::find(std::begin(onames), std::end(onames), value) == std::end(onames)) {
-                        stage_rename->add_name(value);
+                        stage_rename->add_name(value, true);
                     }
                 }
             }
         }
     }
-    return stage_rename->get_name(name);
+    return stage_rename->get_name(name, 0);
 }
 
 std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
@@ -249,17 +249,17 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
             out << "\t\t\t}" << std::endl;
             out << "\t\t};" << std::endl;
             out << "\t\texecutor {" << std::endl;
-            if (auto t = std::find_if(std::begin(p.tables), std::end(p.tables), [&](auto& table) {
-                return table.name == c.true_next || table.name == c.false_next;
-            }); t != std::end(p.tables)) {
-                for (auto [key, value] : t->next_tables) {
-                    out << "\t\t\t" << vp.actions.translate_name(key) << ": ";
-                    if (value.size() == 0) {
-                        out << "None";
-                    } else {
-                        out << vp.translate_stage_name(value);
+            for (auto t = std::begin(p.tables); t != std::end(p.tables); t++) {
+                if (t->name == c.true_next || t->name == c.false_next) {
+                    for (int i = 0; auto [key, value] : t->next_tables) {
+                        out << "\t\t\t" << vp.actions.translate_name(key, t->action_ids[i++]) << ": ";
+                        if (value.size() == 0) {
+                            out << "None";
+                        } else {
+                            out << vp.translate_stage_name(value);
+                        }
+                        out << ";" << std::endl;
                     }
-                    out << ";" << std::endl;
                 }
             }
             out << "\t\t};" << std::endl;
@@ -288,8 +288,8 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
                 out << "\t\t\t}" << std::endl;
                 out << "\t\t};" << std::endl;
                 out << "\t\texecutor {" << std::endl;
-                for (auto [key, value] : t.next_tables) {
-                    out << "\t\t\t" << vp.actions.translate_name(key) << ": ";
+                for (int i = 0; auto [key, value] : t.next_tables) {
+                    out << "\t\t\t" << vp.actions.translate_name(key, t.action_ids[i++]) << ": ";
                     if (value.size() == 0) {
                         out << "None";
                     } else {

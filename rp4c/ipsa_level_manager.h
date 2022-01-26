@@ -71,11 +71,12 @@ public:
 
 class IpsaLevelManager {
 public:
-    static IpsaHeaderManager& header_manager;
+    IpsaHeaderManager* header_manager = nullptr;
     int global_level_id = 0;
     std::vector<IpsaLevel> levels;
     std::map<std::string, int> states;
-    IpsaLevelManager() {}
+    IpsaLevelManager(IpsaHeaderManager* _header_manager): 
+        header_manager(_header_manager) {}
     void load(const Rp4Ast* ast);
 };
 
@@ -117,7 +118,7 @@ void IpsaLevelManager::load(const Rp4Ast* ast) {
         auto& targets = std::static_pointer_cast<Rp4SelectTransition>(trans)->targets;
         std::vector<IpsaHeaderField> fields;
         for (auto& target : targets) {
-            fields.push_back(IpsaHeaderField(*(header_manager.lookup(
+            fields.push_back(IpsaHeaderField(*(header_manager->lookup(
                 target.member_name, target.field_name
             ))));
         }
@@ -127,7 +128,7 @@ void IpsaLevelManager::load(const Rp4Ast* ast) {
         for (auto& entry : entries) {
             if (entry.accept_drop == 2) {
                 auto next_state = get_state(entry.next);
-                auto m = header_manager.get_header(&(next_state->extract.target));
+                auto m = header_manager->get_header(&(next_state->extract.target));
                 level.add(IpsaLevelEntry(
                     IpsaParserTcamEntry(state, entry.key.get()),
                     IpsaParserSramEntry(
@@ -147,7 +148,7 @@ void IpsaLevelManager::load(const Rp4Ast* ast) {
     if (state_defs.size() > 0) {
         auto first_state = &(state_defs[0]);
         auto& first_header = state_defs[0].extract.target;
-        auto m = header_manager.get_header(&first_header);
+        auto m = header_manager->get_header(&first_header);
         states.insert({{"", global_level_id++}});
         levels.push_back(IpsaLevel());
         for (auto& state_def : state_defs) {

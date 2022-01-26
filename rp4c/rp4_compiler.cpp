@@ -3,7 +3,6 @@
 #include "ipsa_builder.h"
 
 IpsaBuilder builder;
-IpsaHeaderManager& IpsaLevelManager::header_manager = builder.header_manager;
 
 int main(int argc, char* argv[]) {
     const char* input = argv[1];

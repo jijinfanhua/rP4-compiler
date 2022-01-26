@@ -20,7 +20,8 @@ public:
     std::map<std::string, IpsaAction> actions;
     const IpsaAction* lookup(std::string name) const;
     void addAction(const Rp4ActionDef* action_def);
-    IpsaActionManager(const Rp4Ast* ast);
+    IpsaActionManager() {}
+    void load(const Rp4Ast* ast);
 };
 
 const IpsaAction* IpsaActionManager::lookup(std::string name) const {
@@ -37,7 +38,7 @@ void IpsaActionManager::addAction(const Rp4ActionDef* action_def) {
     }
 }
 
-IpsaActionManager::IpsaActionManager(const Rp4Ast* ast) {
+void IpsaActionManager::load(const Rp4Ast* ast) {
     global_action_id = 0;
     bool noaction_included = false;
     for (auto& action_def : ast->actions_def.actions) {

@@ -110,6 +110,7 @@ void extract_actions() {
     for (auto & action_json : j.at("actions")) {
         P4Action action;
         action.name = action_json.at("name").get<std::string>();
+        action.id = action_json.at("id").get<int>();
         for (auto & runtime_data_json : action_json.at("runtime_data")) {
             P4RuntimeData runtime_data;
             runtime_data.name = runtime_data_json.at("name").get<std::string>();
