@@ -62,7 +62,7 @@ public:
 
 class IpsaTable : public IpsaModule {
 public:
-    int id; // in matcher
+    int id = 0; // in matcher
     int table_id; // global
     // int hit_miss;
     // int hit_action_id;

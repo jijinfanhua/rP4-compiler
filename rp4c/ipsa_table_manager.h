@@ -3,6 +3,7 @@
 #include "ipsa_table.h"
 #include "ipsa_header_manager.h"
 #include "ipsa_action_manager.h"
+#include "ipsa_configuration.h"
 
 class IpsaTableManager {
 public:
@@ -15,13 +16,12 @@ public:
     void load(const Rp4Ast* ast);
 };
 
-// leave id and memory undefined
+// leave id and memory config undefined
 void IpsaTableManager::load(const Rp4Ast* ast) {
     global_table_id = 0;
     for (auto& table_def : ast->tables_def.tables) {
         IpsaTable table(global_table_id++);
         auto& key_def_entries = table_def.key_def.entries;
-        // table.hit_miss = 0;
         int default_action_id = 0;
         for (auto x : table_def.optional_stmts) {
             if (x->isDefault()) {
@@ -32,7 +32,6 @@ void IpsaTableManager::load(const Rp4Ast* ast) {
                 }
             }
         }
-        // table.hit_action_id = 
         table.miss_action_id = default_action_id;
         if (key_def_entries.size() == 0) {
             table.no_table = 1; // no entries, no table
@@ -50,9 +49,40 @@ void IpsaTableManager::load(const Rp4Ast* ast) {
                     table.match_type = MT_TERNARY;
                 }
             }
-            for (auto& entry : key_def_entries) {
-                table.field_infos.push_back(header_manager->lookup(entry.lvalue)->toIpsaValue());
+            if (table.match_type == MT_EXACT) {
+                table.key_memory.type = MEM_SRAM;
+            } else {
+                table.key_memory.type = MEM_TCAM;
             }
+            int table_key_width = 0;
+            for (auto& entry : key_def_entries) {
+                auto x = header_manager->lookup(entry.lvalue);
+                table_key_width += x->field_length;
+                table.field_infos.push_back(x->toIpsaValue());
+            }
+            int mem_width = table.key_memory.type == MEM_SRAM ? ipsa_configuration::SRAM_WIDTH : ipsa_configuration::TCAM_WIDTH;
+            int mem_depth = table.key_memory.type == MEM_SRAM ? ipsa_configuration::SRAM_DEPTH : ipsa_configuration::TCAM_DEPTH;
+            table.key_memory.width = (table_key_width + (mem_width - 1)) / mem_width;
+            int depth = 1;
+            for (auto x : table_def.optional_stmts) {
+                if (x->isSize()) {
+                    depth = std::static_pointer_cast<Rp4TableSizeStmt>(x)->size;
+                    depth = (depth + (mem_depth - 1)) / mem_depth;
+                    break;
+                }
+            }
+            table.key_memory.depth = table.value_memory.depth = depth;
+            table.value_memory.type = MEM_SRAM;
+            mem_width = ipsa_configuration::SRAM_WIDTH;
+            int width = 1;
+            for (auto x : table_def.optional_stmts) {
+                if (x->isWidth()) {
+                    width = std::static_pointer_cast<Rp4TableValueWidthStmt>(x)->width;
+                    width = (width + (mem_width - 1)) / mem_width;
+                    break;
+                }
+            }
+            table.value_memory.width = width;
         }
         tables.insert({{table_def.name, std::move(table)}});
     }

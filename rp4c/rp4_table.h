@@ -20,6 +20,7 @@ static inline std::string to_string(Rp4MatchType mt) {
 
 class Rp4TableOptionalStmt : public Rp4TreeNode {
 public:
+    virtual bool isWidth() const { return false; }
     virtual bool isSize() const { return false; }
     virtual bool isDefault() const { return false; }
 };
@@ -32,6 +33,17 @@ public:
     virtual bool isSize() const { return true; }
     virtual std::string toString() const { 
         return "table-size-stmt(" + std::to_string(size) + ")";
+    }
+};
+
+class Rp4TableValueWidthStmt : public Rp4TableOptionalStmt {
+public:
+    int width;
+    Rp4TableValueWidthStmt() {}
+    Rp4TableValueWidthStmt(int _width) : width(_width) {}
+    virtual bool isWidth() const { return true; }
+    virtual std::string toString() const { 
+        return "table-width-stmt(" + std::to_string(width) + ")";
     }
 };
 

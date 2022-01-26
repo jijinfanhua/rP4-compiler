@@ -68,6 +68,7 @@ tables {
 			hdr.ipv4.dstAddr: lpm;
 		}
 		size = 1024;
+		value_width = 73;
 		default_action = drop;
 	}
 }

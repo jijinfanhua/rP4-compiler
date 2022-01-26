@@ -82,16 +82,17 @@ extern int yydebug;
      MISS = 291,
      NONE = 292,
      IS_VALID = 293,
-     EQU = 294,
-     NEQ = 295,
-     LEQ = 296,
-     GEQ = 297,
-     T_EOF = 298,
-     ANDANDAND = 299,
-     DIVDIVDIV = 300,
-     IDENTIFIER = 301,
-     VALUE_STRING = 302,
-     VALUE_INT = 303
+     VALUE_WIDTH = 294,
+     EQU = 295,
+     NEQ = 296,
+     LEQ = 297,
+     GEQ = 298,
+     T_EOF = 299,
+     ANDANDAND = 300,
+     DIVDIVDIV = 301,
+     IDENTIFIER = 302,
+     VALUE_STRING = 303,
+     VALUE_INT = 304
    };
 #endif
 

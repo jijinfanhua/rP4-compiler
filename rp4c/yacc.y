@@ -27,7 +27,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token TABLES TABLE KEY SIZE DEFAULT_ACTION ENTRIES
 %token EXACT TERNARY LPM STAGE
 %token CONTROL MATCHER EXECUTOR SWITCH HIT MISS NONE
-%token IS_VALID
+%token IS_VALID VALUE_WIDTH
 
 
 // non-keywords
@@ -576,6 +576,10 @@ table_optional_stmt:
     |   DEFAULT_ACTION '=' NOACTION ';'
     {
         $$ = std::make_shared<Rp4DefaultActionStmt>("NoAction");
+    }
+    |   VALUE_WIDTH '=' VALUE_INT ';'
+    {
+        $$ = std::make_shared<Rp4TableValueWidthStmt>($3);
     }
     ;
 

@@ -92,6 +92,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"|"+"|"-"|"/
 "isValid" { return IS_VALID; }
 "None" { return NONE; }
 "stage" { return STAGE; }
+"value_width" { return VALUE_WIDTH; }
     /* operators */
 ">=" { return GEQ; }
 "<=" { return LEQ; }

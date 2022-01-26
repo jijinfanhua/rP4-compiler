@@ -271,6 +271,7 @@ tables {
 			standard_metadata.ingress_port: exact;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = NoAction_0;
 	}
 	table port_vlan_to_bd_mapping {
@@ -280,6 +281,7 @@ tables {
 			hdr.vlan_tag.vid: ternary;
 		}
 		size = 1024;
+		value_width = 48;
 		default_action = NoAction_1;
 	}
 	table validate_ethernet {
@@ -289,6 +291,7 @@ tables {
 			hdr.vlan_tag.isValid(): ternary;
 		}
 		size = 512;
+		value_width = 16;
 		default_action = NoAction_2;
 	}
 	table validate_ipv4 {
@@ -298,6 +301,7 @@ tables {
 			hdr.ipv4.ttl: ternary;
 		}
 		size = 512;
+		value_width = 16;
 		default_action = NoAction_3;
 	}
 	table validate_ipv6 {
@@ -306,6 +310,7 @@ tables {
 			hdr.ipv6.hop_limit: ternary;
 		}
 		size = 512;
+		value_width = 16;
 		default_action = NoAction_4;
 	}
 	table rmac {
@@ -313,18 +318,21 @@ tables {
 			lkp_0.mac_dst_addr: exact;
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = NoAction_8;
 	}
 	table tbl_act {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_5;
 	}
 	table tbl_act_0 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_1;
 	}
 	table fib_fib {
@@ -333,18 +341,21 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = fib_fib_miss_22;
 	}
 	table tbl_act_1 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act;
 	}
 	table tbl_act_2 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_0;
 	}
 	table fib_fib_lpm {
@@ -353,12 +364,14 @@ tables {
 			lkp_0.ipv4_dst_addr: lpm;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = fib_fib_miss_23;
 	}
 	table tbl_act_3 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_4;
 	}
 	table fibv6_fib {
@@ -367,18 +380,21 @@ tables {
 			lkp_0.ipv6_dst_addr: exact;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = fibv6_fib_miss_26;
 	}
 	table tbl_act_4 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_2;
 	}
 	table tbl_act_5 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_3;
 	}
 	table fibv6_fib_lpm {
@@ -387,12 +403,14 @@ tables {
 			lkp_0.ipv6_dst_addr: lpm;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = fibv6_fib_miss_27;
 	}
 	table tbl_act_6 {
 		key = {
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = act_6;
 	}
 	table ecmp {
@@ -405,6 +423,7 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
+		value_width = 80;
 		default_action = NoAction_5;
 	}
 	table ip_rewrite {
@@ -413,6 +432,7 @@ tables {
 			hdr.ipv6.isValid(): exact;
 		}
 		size = 1024;
+		value_width = 16;
 		default_action = NoAction_6;
 		entries = {
 			(0x01, 0x00): rewrite_ipv4;
@@ -424,6 +444,7 @@ tables {
 			meta.metadata_t_bd: exact;
 		}
 		size = 1024;
+		value_width = 64;
 		default_action = NoAction_7;
 	}
 	table dmac {
@@ -432,6 +453,7 @@ tables {
 			hdr.ethernet.dst_addr: exact;
 		}
 		size = 1024;
+		value_width = 32;
 		default_action = dmac_miss;
 	}
 }
@@ -594,8 +616,8 @@ control MyIngress {
 			}
 		};
 		executor {
-			fib_fib__HIT__: tbl_act_1_s;
-			fib_fib__MISS__: tbl_act_2_s;
+			__HIT__: tbl_act_1_s;
+			__MISS__: tbl_act_2_s;
 		};
 	}
 	stage tbl_act_1_s {

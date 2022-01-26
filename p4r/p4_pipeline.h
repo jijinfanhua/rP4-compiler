@@ -180,6 +180,22 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
             }
             out << "\t\t}" << std::endl;
             out << "\t\tsize = " << table.max_size << ";" << std::endl;
+            int value_width = 16;
+            int action_param_width = 0;
+            for (auto & action_id : table.action_ids) {
+                for (auto & action : vp.actions) {
+                    if (action.id == action_id) {
+                        int temp = 0;
+                        for (auto & param : action.runtime_data) {
+                            temp += param.bitwidth;
+                        }
+                        action_param_width = std::max(action_param_width, temp);
+                        break;
+                    }
+                }
+            }
+            value_width += action_param_width;
+            out << "\t\tvalue_width = " << value_width << ";" << std::endl;
             vp.out_default_action(out << "\t\tdefault_action = ", table, table.default_entry) << ";" << std::endl;
             if (table.entries.size() > 0) {
                 out << "\t\tentries = {" << std::endl;
