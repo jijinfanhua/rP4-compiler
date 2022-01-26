@@ -15,7 +15,7 @@ YACC_SRC = yacc.y
 YACC_CPP = yacc.cpp
 
 all: ${YACC_OBJ} ${LEX_OBJ}  ${CMP_OBJ}
-	${CC} ${CFLAGS} ${LEX_OBJ} ${YACC_OBJ} ${CMP_OBJ} -o ${TARGET}
+	${CC} ${CFLAGS} ${LEX_OBJ} ${YACC_OBJ} ${CMP_OBJ} -o ${TARGET} -g
 
 ${YACC_OBJ}: ${YACC_SRC} ${H_RP4}
 	${YACC} -d ${YACC_SRC} -o ${YACC_CPP}

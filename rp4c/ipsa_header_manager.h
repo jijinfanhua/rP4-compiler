@@ -33,7 +33,7 @@ public:
             {"field_internal_offset", makeValue(field_internal_offset)},
             {"field_length", makeValue(field_length)}
         };
-        return std::make_shared<IpsaDict>(dst);
+        return makeValue(dst);
     }
 };
 

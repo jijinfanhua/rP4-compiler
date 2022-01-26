@@ -31,6 +31,7 @@ public:
     virtual std::string toString() const {
         return "literal(" + std::to_string(value) + ")";
     }
+    virtual bool isLiteral() const { return true; }
 };
 
 class Rp4Parameter : public Rp4Operand {
@@ -41,6 +42,7 @@ public:
     virtual std::string toString() const {
         return "parameter(" + name + ")";
     }
+    virtual bool isParameter() const { return true; }
 };
 
 // single-operand operators use left as nullptr
@@ -64,6 +66,7 @@ public:
         }
         return std::move(dst);
     }
+    virtual bool isBinary() const { return true; }
 };
 
 class Rp4Expression : public Rp4TreeNode {

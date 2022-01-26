@@ -24,4 +24,18 @@ public:
             dynamic_cast<const Rp4TreeNode*>(&executor)
         };
     }
+    const Rp4StageExecutorEntry* get_virtual_action() const {
+        // empty stage = 
+        // 1. all trans entries are table entries
+        // 2. has only 1 action
+        for (auto& entry : matcher.switch_entries) {
+            if (!entry.value->isTableStmt()) {
+                return nullptr;
+            }
+        }
+        if (executor.entries.size() == 1) {
+            return &(executor.entries[0]);
+        }
+        return nullptr;
+    }
 };

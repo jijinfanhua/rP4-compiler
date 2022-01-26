@@ -14,5 +14,5 @@ public:
     IpsaStageManager* stage_manager;
     IpsaHeaderManager* header_manager;
     IpsaLevelManager* level_manager;
-
+    
 };

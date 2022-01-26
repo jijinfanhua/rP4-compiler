@@ -22,7 +22,7 @@ void yyerror(YYLTYPE *locp, const char* s) {
 %token TRUE FALSE
 %token HEADER HEADERS
 %token PARSER STATE TRANSITION PACKET PACKET_IN
-%token DEFAULT ACCEPT EXTRACT SELECT DROP
+%token DEFAULT ACCEPT EXTRACT SELECT
 %token ACTIONS ACTION NOACTION
 %token TABLES TABLE KEY SIZE DEFAULT_ACTION ENTRIES
 %token EXACT TERNARY LPM STAGE
@@ -247,10 +247,6 @@ direct_entry:
     |   ACCEPT
     {
         $$ = Rp4TransitionEntry(std::make_shared<Rp4DefaultKey>(), "accept", 0);
-    }
-    |   DROP
-    {
-        $$ = Rp4TransitionEntry(std::make_shared<Rp4DefaultKey>(), "drop", 1);
     }
     ;
 
@@ -733,6 +729,10 @@ switch_value:
     |   ACTION '(' NOACTION ')'
     {
         $$ = std::make_shared<Rp4SwitchActionStmt>("NoAction");
+    }
+    |   NONE
+    {
+        $$ = std::make_shared<Rp4SwitchStageStmt>("None", true);
     }
     ;
 

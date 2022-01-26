@@ -17,15 +17,23 @@ header ipv4_t {
 	bit<32>	srcAddr;
 	bit<32>	dstAddr;
 }
-
 struct metadata {
 } meta;
-
-struct header {
-	ethernet_t ethernet
-	ipv4_t ipv4
+struct headers {
+	ethernet_t	ethernet;
+	ipv4_t	ipv4;
 } hdr;
 
+struct standard_metadata_t {
+    bit<9> ingress_port;
+    bit<9> egress_spec;
+    bit<9> egress_port;
+    bit<32> clone_spec;
+    bit<32> instance_type;
+    bit<1> drop;
+    bit<16> recirculate_port;
+    bit<32> packet_length;
+} standard_metadata;
 parser MyParser(packet_in packet) {
 	state start {
 		packet.extract(hdr.ethernet);
@@ -44,7 +52,7 @@ actions {
 	action NoAction() {
 	}
 	action drop() {
-		mark_to_drop(standard_metadata);
+		standard_metadata.drop = 1;
 	}
 	action ipv4_forward(bit<48> dstAddr, bit<9> port) {
 		standard_metadata.egress_spec = port;
@@ -60,7 +68,7 @@ tables {
 			hdr.ipv4.dstAddr: lpm;
 		}
 		size = 1024;
-		default_action = drop();
+		default_action = drop;
 	}
 }
 

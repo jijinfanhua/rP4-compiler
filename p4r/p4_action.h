@@ -60,16 +60,20 @@ std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
                 p.parameters[0].output(out, &(action.runtime_data)) << " = ";
                 p.parameters[1].output(out, &(action.runtime_data)) << ";" << std::endl;
             } else {
-                out << p.op << "(";
-                for (bool first = true; auto & pp : p.parameters) {
-                    if (!first) {
-                        out << ", ";
-                    } else {
-                        first = false;
+                if (p.op == "mark_to_drop") {
+                    out << "standard_metadata.drop = 1;" << std::endl;
+                } else {
+                    out << p.op << "(";
+                    for (bool first = true; auto & pp : p.parameters) {
+                        if (!first) {
+                            out << ", ";
+                        } else {
+                            first = false;
+                        }
+                        pp.output(out, &(action.runtime_data));
                     }
-                    pp.output(out, &(action.runtime_data));
+                    out << ");" << std::endl;
                 }
-                out << ");" << std::endl;
             }
         }
         out << "\t}" << std::endl;

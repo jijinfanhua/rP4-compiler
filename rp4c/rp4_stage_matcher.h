@@ -5,7 +5,8 @@
 #include "rp4_key.h"
 
 class Rp4SwitchValue : public Rp4TreeNode {
-
+public:
+    virtual bool isTableStmt() const { return false; }
 };
 
 class Rp4SwitchTableStmt : public Rp4SwitchValue {
@@ -16,19 +17,21 @@ public:
     virtual std::string toString() const { 
         return "switch-value:table(" + name + ")";
     }
+    virtual bool isTableStmt() const { return true; }
 };
 
 class Rp4SwitchStageStmt : public Rp4SwitchValue {
 public:
     std::string name;
+    bool to_none;
     Rp4SwitchStageStmt() {}
-    Rp4SwitchStageStmt(std::string _name) : name(std::move(_name)) {}
+    Rp4SwitchStageStmt(std::string _name, bool _to_none = false) : name(std::move(_name)), to_none(_to_none) {}
     virtual std::string toString() const { 
         return "switch-value:stage(" + name + ")";
     }
 };
 
-
+// this grammar is deprecated
 class Rp4SwitchActionStmt : public Rp4SwitchValue {
 public:
     std::string name;
