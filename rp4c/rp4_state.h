@@ -23,10 +23,10 @@ class Rp4TransitionEntry : public Rp4TreeNode {
 public:
     std::shared_ptr<Rp4Key> key = nullptr;
     std::string next;
-    bool is_accept = false;
+    int accept_drop = 2;
     Rp4TransitionEntry() {}
-    Rp4TransitionEntry(std::shared_ptr<Rp4Key> _key, std::string _next, bool _is_accept = false):
-        key(std::move(_key)), next(std::move(_next)), is_accept(_is_accept) {}
+    Rp4TransitionEntry(std::shared_ptr<Rp4Key> _key, std::string _next, int _accept_drop = 2):
+        key(std::move(_key)), next(std::move(_next)), accept_drop(_accept_drop) {}
     virtual std::vector<const Rp4TreeNode*> children() const {
         return { key.get() };
     }
@@ -90,17 +90,29 @@ public:
             dynamic_cast<const Rp4TreeNode*>(transition.get())
         };
     }
-    bool isEmpty() const {
+    // should be deprecated
+    int get_accept_drop() const {
         auto is_accept = [](const Rp4TransitionEntry& entry) {
-            return entry.is_accept;
+            return entry.accept_drop == 0;
+        };
+        auto is_drop = [](const Rp4TransitionEntry& entry) {
+            return entry.accept_drop == 1;
         };
         if (transition->isSelect()) {
             auto& entries = std::static_pointer_cast<Rp4SelectTransition>(transition)->entries;
-            return std::all_of(std::begin(entries), std::end(entries), is_accept);
+            if (std::all_of(std::begin(entries), std::end(entries), is_accept)) {
+                return 0;
+            } else if (std::all_of(std::begin(entries), std::end(entries), is_drop)) {
+                return 1;
+            }
         } else if (transition->isDirect()) {
             auto& entry = std::static_pointer_cast<Rp4DirectTransition>(transition)->entry;
-            return is_accept(entry);
+            if (is_accept(entry)) {
+                return 0;
+            } else {
+                return 1;
+            }
         }
-        return false;
+        return 2;
     }
 };

@@ -70,6 +70,7 @@ single_op ";"|"("|")"|","|"*"|"="|">"|"<"|"."|":"|"#"|"["|"]"|"{"|"}"|"+"|"-"|"/
 "select" { return SELECT; }
 "default" { return DEFAULT; }
 "accept" { return ACCEPT; }
+"drop" { return DROP; }
 "extract" { return EXTRACT; }
 "actions" { return ACTIONS; }
 "action" { return ACTION; }

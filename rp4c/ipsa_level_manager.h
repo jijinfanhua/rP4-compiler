@@ -28,9 +28,9 @@ public:
     int header_length;
     int next_state;
     std::vector<IpsaHeaderField> transition_fields;
-    int miss_act;
-    IpsaParserSramEntry(int _header_id, int _header_length, int _next_state, std::vector<IpsaHeaderField> _transition_fields, int _miss_act):
-        header_id(_header_id), header_length(_header_length), next_state(_next_state), transition_fields(std::move(_transition_fields)), miss_act(_miss_act) {}
+    int accept_drop;
+    IpsaParserSramEntry(int _header_id, int _header_length, int _next_state, std::vector<IpsaHeaderField> _transition_fields, int _accept_drop):
+        header_id(_header_id), header_length(_header_length), next_state(_next_state), transition_fields(std::move(_transition_fields)), accept_drop(_accept_drop) {}
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const { 
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"header_id", makeValue(header_id)},
@@ -38,7 +38,7 @@ public:
             {"next_state", makeValue(next_state)},
             {"transition_field_num", makeValue(transition_fields.size())},
             {"transition_fields", makeValue(transition_fields)},
-            {"miss_act", makeValue(miss_act)}
+            {"accept_drop", makeValue(accept_drop)}
         };
         return makeValue(dst);
     }
@@ -75,10 +75,11 @@ public:
     int global_level_id = 0;
     std::vector<IpsaLevel> levels;
     std::map<std::string, int> states;
-    IpsaLevelManager(const Rp4Ast* ast);
+    IpsaLevelManager() {}
+    void load(const Rp4Ast* ast);
 };
 
-IpsaLevelManager::IpsaLevelManager(const Rp4Ast* ast) {
+void IpsaLevelManager::load(const Rp4Ast* ast) {
     auto& state_defs = ast->parser_def.states;
     global_level_id = 0;
     auto get_state = [&](std::string state_name) -> const Rp4StateDef* {
@@ -90,25 +91,25 @@ IpsaLevelManager::IpsaLevelManager(const Rp4Ast* ast) {
             return nullptr;
         }
     };
-    auto get_miss_act = [&](const Rp4StateDef* state_def) {
-        if (state_def != nullptr) {
-            auto trans = state_def->transition;
-            Rp4TransitionEntry* default_entry = nullptr;
-            if (trans->isDirect()) {
-                default_entry = &(std::static_pointer_cast<Rp4DirectTransition>(trans)->entry);
-            } else if (trans->isSelect()) {
-                auto& entries = std::static_pointer_cast<Rp4SelectTransition>(trans)->entries;
-                if (auto de = std::find_if(std::begin(entries), std::end(entries), [](auto& entry) {
-                    return entry.key->isDefault();
-                }); de != std::end(entries)) {
-                    if (de->is_accept) {
-                        return 0;
-                    }
-                }
-            }
-        }
-        return 1;
-    };
+    // auto get_miss_act = [&](const Rp4StateDef* state_def) {
+    //     if (state_def != nullptr) {
+    //         auto trans = state_def->transition;
+    //         Rp4TransitionEntry* default_entry = nullptr;
+    //         if (trans->isDirect()) {
+    //             default_entry = &(std::static_pointer_cast<Rp4DirectTransition>(trans)->entry);
+    //         } else if (trans->isSelect()) {
+    //             auto& entries = std::static_pointer_cast<Rp4SelectTransition>(trans)->entries;
+    //             if (auto de = std::find_if(std::begin(entries), std::end(entries), [](auto& entry) {
+    //                 return entry.key->isDefault();
+    //             }); de != std::end(entries)) {
+    //                 if (de->is_accept) {
+    //                     return 0;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return 1;
+    // };
     auto get_select = [&](const Rp4StateDef* state_def) -> std::vector<IpsaHeaderField> {
         if (state_def == nullptr) { return {}; }
         auto trans = state_def->transition;
@@ -121,38 +122,43 @@ IpsaLevelManager::IpsaLevelManager(const Rp4Ast* ast) {
             ))));
         }
         return std::move(fields);
-        
     };
     auto build_entries = [&](IpsaLevel& level, int state, const std::vector<Rp4TransitionEntry>& entries) {
         for (auto& entry : entries) {
-            auto next_state = get_state(entry.next);
-            auto m = header_manager.get_header(&(next_state->extract.target));
-            level.add(IpsaLevelEntry(
-                IpsaParserTcamEntry(state, entry.key.get()),
-                IpsaParserSramEntry(
-                    m->header_id, m->offset, 
-                    next_state->isEmpty() ? 0 : states[next_state->name],
-                    get_select(next_state), get_miss_act(next_state)
-                )
-            ));
+            if (entry.accept_drop == 2) {
+                auto next_state = get_state(entry.next);
+                auto m = header_manager.get_header(&(next_state->extract.target));
+                level.add(IpsaLevelEntry(
+                    IpsaParserTcamEntry(state, entry.key.get()),
+                    IpsaParserSramEntry(
+                        m->header_id, m->offset, 
+                        states[next_state->name],
+                        get_select(next_state), 2
+                    )
+                ));
+            } else {
+                level.add(IpsaLevelEntry(
+                    IpsaParserTcamEntry(state, entry.key.get()),
+                    IpsaParserSramEntry(0, 0, 0, {}, entry.accept_drop)
+                ));
+            }
         }
     };
     if (state_defs.size() > 0) {
         auto first_state = &(state_defs[0]);
         auto& first_header = state_defs[0].extract.target;
         auto m = header_manager.get_header(&first_header);
-        states[""] = global_level_id++;
+        states.insert({{"", global_level_id++}});
+        levels.push_back(IpsaLevel());
         for (auto& state_def : state_defs) {
-            if (!state_def.isEmpty()) {
-                states[state_def.name] = global_level_id++;
-                levels.push_back(IpsaLevel());
-            }
+            states.insert({{state_def.name, global_level_id++}});
+            levels.push_back(IpsaLevel());
         }
         levels[0].add(IpsaLevelEntry(
             IpsaParserTcamEntry(0, 0, 0),
             IpsaParserSramEntry(
-                m->header_id, m->offset, first_state->isEmpty() ? 0 : states[first_state->name],
-                get_select(first_state), get_miss_act(first_state)
+                m->header_id, m->offset, states[first_state->name],
+                get_select(first_state), 2
             )
         ));
         for (auto& state_def : state_defs) {

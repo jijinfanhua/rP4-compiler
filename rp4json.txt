@@ -33,6 +33,7 @@ level = [
 			mask = INT // -1 for exact match
 		}
 		parser_sram_entry = {
+			accept_drop = 0 (accept) | 1 (drop) | 2 (extract the header)
 			header_id = INT // the header to extract in this state
 			header_length = INT
 			next_state = INT // 0 if next is accept
@@ -40,8 +41,10 @@ level = [
 			transition_fields = [
 				(field)...
 			]
-			miss_act = 0 accept | 1 drop // corresponding to the next state
 		}
+		// first use transition_field to search the lookup-table
+		// if accept_drop = 0 | 1，accept or drop
+		// if accept_drop = 2, extract header_id(header_length), then goto next_state
 	}, ...
 ] // first level only has one entry to extract ethernet
 

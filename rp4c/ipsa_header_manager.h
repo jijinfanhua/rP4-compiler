@@ -60,13 +60,15 @@ const IpsaHeaderField* IpsaHeader::lookup(std::string field_name) const {
 
 IpsaHeader::IpsaHeader(const Rp4HeaderDef* header_def, int id):
     header_id(id), is_header(true) {
-    fields["isValid"] = IpsaHeaderField(FT_VALID, id);
+    fields.insert({{
+        "isValid", IpsaHeaderField(FT_VALID, id, 0, 0)
+    }});
     for (offset = 0; auto& field : header_def->fields) {
         if (auto x = field.type; x->isBitType()) {
             auto y = dynamic_cast<const Rp4BitType*>(x.get());
-            fields[field.name] = IpsaHeaderField(
+            fields.insert({{field.name, IpsaHeaderField(
                 FT_FIELD, id, offset, y->length
-            );
+            )}});
             offset += y->length;
         } else {
             std::cout << "error header: " << header_def->name << std::endl;
@@ -76,13 +78,15 @@ IpsaHeader::IpsaHeader(const Rp4HeaderDef* header_def, int id):
 
 IpsaHeader::IpsaHeader(const Rp4StructDef* struct_def, int id):
     header_id(id), is_header(false) {
-    fields["isValid"] = IpsaHeaderField(FT_VALID, id);
+    fields.insert({{
+        "isValid", IpsaHeaderField(FT_VALID, id, 0, 0)
+    }});
     for (offset = 0; auto& field : struct_def->fields) {
         if (auto x = field.type; x->isBitType()) {
             auto y = dynamic_cast<const Rp4BitType*>(x.get());
-            fields[field.name] = IpsaHeaderField(
+            fields.insert({{field.name, IpsaHeaderField(
                 FT_FIELD, id, offset, y->length
-            );
+            )}});
             offset += y->length;
         } else {
             std::cout << "error metadata: " << struct_def->struct_name << std::endl;
@@ -96,7 +100,8 @@ public:
     int global_header_id;
     std::string header_name;
     std::map<std::string, IpsaHeader> headers;
-    IpsaHeaderManager(const Rp4Ast* ast);
+    IpsaHeaderManager() {}
+    void load(const Rp4Ast* ast);
     const IpsaHeader* get_header(const Rp4Member* member) const;
     const IpsaHeaderField* lookup(std::shared_ptr<Rp4LValue> lvalue) const;
     const IpsaHeaderField* lookup(std::string header_name, std::string field_name) const;
@@ -150,17 +155,21 @@ const IpsaHeaderField* IpsaHeaderManager::lookup(std::shared_ptr<Rp4LValue> lval
 
 void IpsaHeaderManager::addHeader(const Rp4HeaderDef* header_def, std::string name) {
     if (headers.find(name) == headers.end()) {
-        headers[name] = IpsaHeader(header_def, global_header_id++);
+        headers.insert({
+            {name, IpsaHeader(header_def, global_header_id++)}
+        });
     }
 }
 
 void IpsaHeaderManager::addMetadata(const Rp4StructDef* struct_def) {
     if (headers.find(struct_def->name) == headers.end()) {
-        headers[struct_def->name] = IpsaHeader(struct_def, global_header_id++);
+        headers.insert({
+            {struct_def->name, IpsaHeader(struct_def, global_header_id++)}
+        });
     }
 }
 
-IpsaHeaderManager::IpsaHeaderManager(const Rp4Ast* ast) {
+void IpsaHeaderManager::load(const Rp4Ast* ast) {
     global_header_id = 0;
     for (auto& struct_def : ast->struct_defs) {
         if (struct_def.is_header) {
@@ -168,7 +177,7 @@ IpsaHeaderManager::IpsaHeaderManager(const Rp4Ast* ast) {
             for (auto& field_def : struct_def.fields) {
                 if (auto x = field_def.type; x->isNamedType()) {
                     auto y = dynamic_cast<const Rp4NamedType*>(x.get());
-                    if (auto header_def = std::find_if(std::begin(ast->header_defs), std::end(ast->header_defs), [](auto& h) {
+                    if (auto header_def = std::find_if(std::begin(ast->header_defs), std::end(ast->header_defs), [&](auto& h) {
                         return h.name == y->name;
                     }); header_def != std::end(ast->header_defs)) {
                         addHeader(header_def.base(), field_def.name);
