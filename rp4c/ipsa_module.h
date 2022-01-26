@@ -15,3 +15,11 @@ std::shared_ptr<IpsaValue> makeValue(std::vector<T> _value) {
     }
     return makeValue(dst);
 }
+
+std::shared_ptr<IpsaValue> makeValue(const std::vector<int>& v) {
+    std::vector<std::shared_ptr<IpsaValue>> temp;
+    for (auto x : v) {
+        temp.push_back(makeValue(x));
+    }
+    return makeValue(temp);
+}

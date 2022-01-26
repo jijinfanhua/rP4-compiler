@@ -106,9 +106,7 @@ param_op = {
 matcher = [
 	{
 		id = INT // indepedent in a processor
-		hit_miss = 1 | 0 // if = 1, do __HIT__ or __MISS__ action; if = 0, do the action from table
-		hit_action_id = INT
-		miss_action_Id = INT
+		miss_action_id = INT // default action id (if no table or miss)
 		no_table = 1 | 0 // if = 1, there is no table
 		action_to_proc = [
 			{

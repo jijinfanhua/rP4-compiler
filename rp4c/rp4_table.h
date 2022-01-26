@@ -11,15 +11,17 @@ enum Rp4MatchType {
 
 static inline std::string to_string(Rp4MatchType mt) {
     static const std::map<Rp4MatchType, std::string> m = {
-            {MT_EXACT, "exact"},
-            {MT_TERNARY, "ternary"},
-            {MT_LPM, "lpm"}
+            {MT_EXACT, "EXACT"},
+            {MT_TERNARY, "TERNARY"},
+            {MT_LPM, "LPM"}
     };
     return m.at(mt);
 }
 
 class Rp4TableOptionalStmt : public Rp4TreeNode {
-
+public:
+    virtual bool isSize() const { return false; }
+    virtual bool isDefault() const { return false; }
 };
 
 class Rp4TableSizeStmt : public Rp4TableOptionalStmt {
@@ -27,6 +29,7 @@ public:
     int size;
     Rp4TableSizeStmt() {}
     Rp4TableSizeStmt(int _size) : size(_size) {}
+    virtual bool isSize() const { return true; }
     virtual std::string toString() const { 
         return "table-size-stmt(" + std::to_string(size) + ")";
     }
@@ -78,6 +81,7 @@ public:
     std::string action_name;
     Rp4DefaultActionStmt() {}
     Rp4DefaultActionStmt(std::string _action_name) : action_name(std::move(_action_name)) {}
+    virtual bool isDefault() const { return true; }
     virtual std::string toString() const {
         return "default_action_stmt(" + action_name + ")";
     }

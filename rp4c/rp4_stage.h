@@ -28,6 +28,9 @@ public:
         // empty stage = 
         // 1. all trans entries are table entries
         // 2. has only 1 action
+        // this stage can be removed
+        // and add the action to the prior one
+        //     as long as the lvalue does not conflict
         for (auto& entry : matcher.switch_entries) {
             if (!entry.value->isTableStmt()) {
                 return nullptr;

@@ -7,6 +7,8 @@ class IpsaStage {
 public:
     int stage_id;
     bool in_ingress;
+    bool removed = false;
+    std::vector<std::pair<int, int>> action_proc;
     const Rp4StageDef* def;
     IpsaStage(const Rp4StageDef* _def, int _stage_id, bool _in_ingress):
         def(_def), stage_id(_stage_id), in_ingress(_in_ingress) {}

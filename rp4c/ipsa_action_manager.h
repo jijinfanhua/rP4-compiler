@@ -26,18 +26,15 @@ class IpsaAction : public IpsaModule {
 public:
     int id;
     int parameter_num;
+    const Rp4ActionDef* action_def;
     std::vector<int> action_parameters_lengths;
     std::vector<IpsaAssign> primitives;
-    IpsaAction(int _id): id(_id) { }
+    IpsaAction(int _id, const Rp4ActionDef* _action_def): id(_id), action_def(_action_def) { }
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
-        std::vector<std::shared_ptr<IpsaValue>> temp;
-        for (auto x : action_parameters_lengths) {
-            temp.push_back(makeValue(x));
-        }
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"id", makeValue(id)},
             {"parameter_num", makeValue(parameter_num)},
-            {"action_parameters_lengths", makeValue(temp)},
+            {"action_parameters_lengths", makeValue(action_parameters_lengths)},
             {"primitives", makeValue(primitives)}
         };
         return makeValue(dst);
@@ -49,11 +46,38 @@ public:
     IpsaHeaderManager* header_manager;
     int global_action_id;
     std::map<std::string, IpsaAction> actions;
+    bool concatAction(int id, const IpsaAction* next_action);
     const IpsaAction* lookup(std::string name) const;
     void addAction(const Rp4ActionDef* action_def);
     IpsaActionManager(IpsaHeaderManager* _header_manager): header_manager(_header_manager) {}
     void load(const Rp4Ast* ast);
 };
+
+// concat action[id] with next_action, return if successful
+bool IpsaActionManager::concatAction(int id, const IpsaAction* next_action) {
+    auto can_concat = [](const std::vector<IpsaAssign>& assign1, const std::vector<IpsaAssign>& assign2) {
+        for (auto& a1 : assign1) {
+            for (auto& a2 : assign2) {
+                if (a1.lvalue == a2.lvalue) {
+                    return false; // lvalue conflict
+                }
+            }
+        }
+        return true;
+    };
+    for (auto& [_, x] : actions) {
+        if (x.id == id) {
+            if (can_concat(x.primitives, next_action->primitives)) {
+                std::copy(std::begin(next_action->primitives), std::end(next_action->primitives),
+                    std::back_inserter(x.primitives));
+                return true;
+            } else {
+                break;
+            }
+        }
+    }
+    return false;
+}
 
 const IpsaAction* IpsaActionManager::lookup(std::string name) const {
     if (auto x = actions.find(name); x != std::end(actions)) {
@@ -65,7 +89,7 @@ const IpsaAction* IpsaActionManager::lookup(std::string name) const {
 
 void IpsaActionManager::addAction(const Rp4ActionDef* action_def) {
     if (actions.find(action_def->name) == std::end(actions)) {
-        IpsaAction action(global_action_id++);
+        IpsaAction action(global_action_id++, action_def);
         action.parameter_num = action_def->parameters.size();
         for (auto& param : action_def->parameters) {
             auto type = param.type;
