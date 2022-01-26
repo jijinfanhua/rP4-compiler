@@ -18,6 +18,7 @@ public:
 class P4Action {
 public:
     std::string name;
+    int id;
     std::vector<P4RuntimeData> runtime_data;
     std::vector<P4Primitive> primitives;
 };
@@ -26,29 +27,24 @@ static P4Rename<P4Action>* action_rename = nullptr;
 
 class P4Actions : public std::vector<P4Action> {
 public:
-    std::string translate_name(const std::string& name) const;
+    std::string translate_name(const std::string& name, int index) const;
     friend std::ostream & operator<<(std::ostream & out, P4Actions const & actions);
 };
 
-std::string P4Actions::translate_name(const std::string& name) const {
+std::string P4Actions::translate_name(const std::string& name, int index) const {
     if (action_rename == nullptr) {
         action_rename = new P4Rename<P4Action>(*this, [](auto & act) {
             return act.name;
         });
     }
-    return action_rename->get_name(name);
+    return action_rename->get_name(name, index);
 }
 
 std::ostream & operator<<(std::ostream & out, P4Actions const & actions) {
-    std::set<std::string> action_names;
     out << "actions {" << std::endl;
     for (auto & action : actions) {
-        if (action_names.find(action.name) != action_names.end()) {
-            continue;
-        } else {
-            action_names.insert(action.name);
-        }
-        out << "\taction " << actions.translate_name(action.name) << "(";
+        out << "\taction " << actions.translate_name(action.name, action.id);
+        out << "(";
         for (bool first = true; auto & rd : action.runtime_data) {
             if (!first) {
                 out << ", ";

@@ -130,7 +130,23 @@ parser MyParser(packet_in packet) {
 }
 
 actions {
-	action NoAction() {
+	action NoAction_0() {
+	}
+	action NoAction_1() {
+	}
+	action NoAction_2() {
+	}
+	action NoAction_3() {
+	}
+	action NoAction_4() {
+	}
+	action NoAction_5() {
+	}
+	action NoAction_6() {
+	}
+	action NoAction_7() {
+	}
+	action NoAction_8() {
 	}
 	action set_port_attributes(bit<16> ifindex) {
 		meta.metadata_t_ifindex = ifindex;
@@ -139,7 +155,11 @@ actions {
 		meta.metadata_t_bd = bd;
 		meta.metadata_t_vrf = vrf;
 	}
-	action malformed_pkt() {
+	action malformed_pkt_11() {
+	}
+	action malformed_pkt_12() {
+	}
+	action malformed_pkt_13() {
 	}
 	action valid_pkt_untagged() {
 		lkp_0.mac_src_addr = hdr.ethernet.src_addr;
@@ -173,15 +193,25 @@ actions {
 	action dmac_hit(bit<16> ifindex) {
 		meta.metadata_t_egress_ifindex = ifindex;
 	}
-	action fib_fib_hit(bit<16> nexthop_index) {
+	action fib_fib_hit_20(bit<16> nexthop_index) {
 		meta.metadata_t_nexthop = nexthop_index;
 	}
-	action fib_fib_miss() {
-	}
-	action fibv6_fib_hit(bit<16> nexthop_index) {
+	action fib_fib_hit_21(bit<16> nexthop_index) {
 		meta.metadata_t_nexthop = nexthop_index;
 	}
-	action fibv6_fib_miss() {
+	action fib_fib_miss_22() {
+	}
+	action fib_fib_miss_23() {
+	}
+	action fibv6_fib_hit_24(bit<16> nexthop_index) {
+		meta.metadata_t_nexthop = nexthop_index;
+	}
+	action fibv6_fib_hit_25(bit<16> nexthop_index) {
+		meta.metadata_t_nexthop = nexthop_index;
+	}
+	action fibv6_fib_miss_26() {
+	}
+	action fibv6_fib_miss_27() {
 	}
 	action set_nexthop_attributes(bit<16> bd, bit<48> dmac) {
 		meta.nexthop_routed = true;
@@ -231,7 +261,7 @@ tables {
 			standard_metadata.ingress_port: exact;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_0;
 	}
 	table port_vlan_to_bd_mapping {
 		key = {
@@ -240,7 +270,7 @@ tables {
 			hdr.vlan_tag.vid: ternary;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_1;
 	}
 	table validate_ethernet {
 		key = {
@@ -249,7 +279,7 @@ tables {
 			hdr.vlan_tag.isValid(): ternary;
 		}
 		size = 512;
-		default_action = NoAction;
+		default_action = NoAction_2;
 	}
 	table validate_ipv4 {
 		key = {
@@ -258,7 +288,7 @@ tables {
 			hdr.ipv4.ttl: ternary;
 		}
 		size = 512;
-		default_action = NoAction;
+		default_action = NoAction_3;
 	}
 	table validate_ipv6 {
 		key = {
@@ -266,14 +296,14 @@ tables {
 			hdr.ipv6.hop_limit: ternary;
 		}
 		size = 512;
-		default_action = NoAction;
+		default_action = NoAction_4;
 	}
 	table rmac {
 		key = {
 			lkp_0.mac_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_8;
 	}
 	table tbl_act {
 		key = {
@@ -293,7 +323,7 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = fib_fib_miss;
+		default_action = fib_fib_miss_22;
 	}
 	table tbl_act_1 {
 		key = {
@@ -313,7 +343,7 @@ tables {
 			lkp_0.ipv4_dst_addr: lpm;
 		}
 		size = 1024;
-		default_action = fib_fib_miss;
+		default_action = fib_fib_miss_23;
 	}
 	table tbl_act_3 {
 		key = {
@@ -327,7 +357,7 @@ tables {
 			lkp_0.ipv6_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = fibv6_fib_miss;
+		default_action = fibv6_fib_miss_26;
 	}
 	table tbl_act_4 {
 		key = {
@@ -347,7 +377,7 @@ tables {
 			lkp_0.ipv6_dst_addr: lpm;
 		}
 		size = 1024;
-		default_action = fibv6_fib_miss;
+		default_action = fibv6_fib_miss_27;
 	}
 	table tbl_act_6 {
 		key = {
@@ -365,7 +395,7 @@ tables {
 			lkp_0.ipv4_dst_addr: exact;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_5;
 	}
 	table ip_rewrite {
 		key = {
@@ -373,7 +403,7 @@ tables {
 			hdr.ipv6.isValid(): exact;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_6;
 		entries = {
 			(0x01, 0x00): rewrite_ipv4;
 			(0x00, 0x01): rewrite_ipv6;
@@ -384,7 +414,7 @@ tables {
 			meta.metadata_t_bd: exact;
 		}
 		size = 1024;
-		default_action = NoAction;
+		default_action = NoAction_7;
 	}
 	table dmac {
 		key = {
@@ -408,9 +438,9 @@ control MyIngress {
 			}
 		};
 		executor {
-			malformed_pkt: rmac_s;
+			malformed_pkt_16: rmac_s;
 			valid_ipv4_pkt: rmac_s;
-			NoAction: rmac_s;
+			NoAction_3: rmac_s;
 		};
 	}
 	stage node_7 {
@@ -424,9 +454,11 @@ control MyIngress {
 			}
 		};
 		executor {
-			malformed_pkt: rmac_s;
+			malformed_pkt_17: rmac_s;
 			valid_ipv6_pkt: rmac_s;
-			NoAction: rmac_s;
+			NoAction_4: rmac_s;
+			rmac_hit: tbl_act_s;
+			NoAction_32: dmac_s;
 		};
 	}
 	stage node_11 {
@@ -440,6 +472,7 @@ control MyIngress {
 		};
 		executor {
 			act_1: fib_fib_s;
+			act_4: fibv6_fib_s;
 		};
 	}
 	stage node_16 {
@@ -452,8 +485,9 @@ control MyIngress {
 			}
 		};
 		executor {
-			fib_fib_hit: tbl_act_6_s;
-			fib_fib_miss: tbl_act_6_s;
+			fib_fib_hit_23: tbl_act_6_s;
+			fib_fib_miss_21: tbl_act_6_s;
+			act_6: ecmp_s;
 		};
 	}
 	stage node_22 {
@@ -466,8 +500,9 @@ control MyIngress {
 			}
 		};
 		executor {
-			fibv6_fib_hit: tbl_act_6_s;
-			fibv6_fib_miss: tbl_act_6_s;
+			fibv6_fib_hit_27: tbl_act_6_s;
+			fibv6_fib_miss_25: tbl_act_6_s;
+			act_6: ecmp_s;
 		};
 	}
 	stage node_26 {
@@ -485,7 +520,9 @@ control MyIngress {
 		executor {
 			rewrite_ipv4: smac_rewrite_s;
 			rewrite_ipv6: smac_rewrite_s;
-			NoAction: smac_rewrite_s;
+			NoAction_6: smac_rewrite_s;
+			dmac_hit: None;
+			dmac_miss: None;
 		};
 	}
 	stage port_vlan_to_bd_mapping_s {
@@ -499,7 +536,7 @@ control MyIngress {
 		};
 		executor {
 			set_bd_attributes: validate_ethernet_s;
-			NoAction: validate_ethernet_s;
+			NoAction_10: validate_ethernet_s;
 		};
 	}
 	stage validate_ethernet_s {
@@ -513,10 +550,10 @@ control MyIngress {
 			}
 		};
 		executor {
-			malformed_pkt: node_5;
+			malformed_pkt_11: node_5;
 			valid_pkt_tagged: node_5;
 			valid_pkt_untagged: node_5;
-			NoAction: node_5;
+			NoAction_2: node_5;
 		};
 	}
 	stage rmac_s {
@@ -529,7 +566,7 @@ control MyIngress {
 		};
 		executor {
 			rmac_hit: tbl_act_s;
-			NoAction: dmac_s;
+			NoAction_32: dmac_s;
 		};
 	}
 	stage tbl_act_s {
@@ -640,7 +677,7 @@ control MyIngress {
 		};
 		executor {
 			set_nexthop_attributes: node_26;
-			NoAction: node_26;
+			NoAction_28: node_26;
 		};
 	}
 	stage smac_rewrite_s {
@@ -653,7 +690,7 @@ control MyIngress {
 		};
 		executor {
 			rewrite_smac: dmac_s;
-			NoAction: dmac_s;
+			NoAction_31: dmac_s;
 		};
 	}
 	stage dmac_s {
