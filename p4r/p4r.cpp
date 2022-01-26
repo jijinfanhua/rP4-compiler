@@ -203,6 +203,7 @@ int main(int argc, char* argv[]) {
     extract_parsers();
     extract_actions();
     extract_pipelines();
+    p4.pipelines.create_hit_miss_actions();
     std::ofstream(argv[2]) << p4;
     return 0;
 }

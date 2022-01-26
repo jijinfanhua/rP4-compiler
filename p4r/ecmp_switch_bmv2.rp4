@@ -263,6 +263,14 @@ actions {
 	action act_6() {
 		meta.nexthop_routed = false;
 	}
+	action fib_fib__HIT__() {
+	}
+	action fib_fib__MISS__() {
+	}
+	action fibv6_fib__HIT__() {
+	}
+	action fibv6_fib__MISS__() {
+	}
 }
 
 tables {
@@ -342,7 +350,7 @@ tables {
 		}
 		size = 1024;
 		value_width = 32;
-		default_action = fib_fib_miss_22;
+		default_action = fib_fib__MISS__;
 	}
 	table tbl_act_1 {
 		key = {
@@ -381,7 +389,7 @@ tables {
 		}
 		size = 1024;
 		value_width = 32;
-		default_action = fibv6_fib_miss_26;
+		default_action = fibv6_fib__MISS__;
 	}
 	table tbl_act_4 {
 		key = {
@@ -616,8 +624,8 @@ control MyIngress {
 			}
 		};
 		executor {
-			__HIT__: tbl_act_1_s;
-			__MISS__: tbl_act_2_s;
+			fib_fib__HIT__: tbl_act_1_s;
+			fib_fib__MISS__: tbl_act_2_s;
 		};
 	}
 	stage tbl_act_1_s {
@@ -653,8 +661,8 @@ control MyIngress {
 			}
 		};
 		executor {
-			__HIT__: tbl_act_4_s;
-			__MISS__: tbl_act_5_s;
+			fibv6_fib__HIT__: tbl_act_4_s;
+			fibv6_fib__MISS__: tbl_act_5_s;
 		};
 	}
 	stage tbl_act_4_s {
