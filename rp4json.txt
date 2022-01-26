@@ -76,12 +76,12 @@ gateway_entry = {
 }
 
 expression = {
-	op = STR (> < >= <= == !=)
+	op = STR (> < >= <= == != + - & | ^ ~)
 	left = (operand)
 	right = (operand)
 }
 
-operand = constant_op | field_op | expression_op
+operand = constant_op | field_op | expression_op | param_op
 
 constant_op = {
 	type = CONST
@@ -96,6 +96,11 @@ field_op = {
 expression_op = {
 	type = EXPR
 	value = (expression)
+}
+
+param_op = {
+	type = PARAM
+	value = INT // parameter id in action(??)
 }
 
 matcher = [
