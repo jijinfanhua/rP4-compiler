@@ -9,6 +9,7 @@ public:
     bool in_ingress;
     bool removed = false;
     std::vector<std::pair<int, int>> action_proc;
+    int gateway_id;
     const Rp4StageDef* def;
     IpsaStage(const Rp4StageDef* _def, int _stage_id, bool _in_ingress):
         def(_def), stage_id(_stage_id), in_ingress(_in_ingress) {}
@@ -17,13 +18,15 @@ public:
 class IpsaStageManager {
 public:
     int global_stage_id;
-    std::map<std::string, IpsaStage> logical_stages;
-    IpsaStageManager(const Rp4Ast* ast);
+    std::vector<IpsaStage> logical_stages;
+    std::map<std::string, int> logical_stages_map;
+    IpsaStageManager() {} 
+    void load(const Rp4Ast* ast);
     void add_stage(const Rp4StageDef* stage_def, bool in_ingress);
     const IpsaStage* lookup(std::string stage_name) const;
 };
 
-IpsaStageManager::IpsaStageManager(const Rp4Ast* ast) {
+void IpsaStageManager::load(const Rp4Ast* ast) {
     global_stage_id = 0;
     for (auto& stage_def : ast->ingress_def.stage_defs) {
         add_stage(&stage_def, true);
@@ -34,14 +37,18 @@ IpsaStageManager::IpsaStageManager(const Rp4Ast* ast) {
 }
 
 void IpsaStageManager::add_stage(const Rp4StageDef* stage_def, bool in_ingress) {
-    if (logical_stages.find(stage_def->name) == std::end(logical_stages)) {
-        logical_stages[stage_def->name] = IpsaStage(stage_def, global_stage_id++, in_ingress);
+    if (logical_stages_map.find(stage_def->name) == std::end(logical_stages_map)) {
+        int x = logical_stages.size();
+        logical_stages.push_back( IpsaStage(stage_def, global_stage_id++, in_ingress));
+        logical_stages_map.insert({{
+            stage_def->name, x
+        }});
     }
 }
 
 const IpsaStage* IpsaStageManager::lookup(std::string stage_name) const {
-    if (auto x = logical_stages.find(stage_name); x != logical_stages.end()) {
-        return &(x->second);
+    if (auto x = logical_stages_map.find(stage_name); x != std::end(logical_stages_map)) {
+        return &(logical_stages[x->second]);
     } else {
         return nullptr;
     }

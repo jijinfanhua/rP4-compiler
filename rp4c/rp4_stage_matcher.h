@@ -7,6 +7,7 @@
 class Rp4SwitchValue : public Rp4TreeNode {
 public:
     virtual bool isTableStmt() const { return false; }
+    virtual bool isStageStmt() const { return false; }
 };
 
 class Rp4SwitchTableStmt : public Rp4SwitchValue {
@@ -29,6 +30,7 @@ public:
     virtual std::string toString() const { 
         return "switch-value:stage(" + name + ")";
     }
+    virtual bool isStageStmt() const { return true; }
 };
 
 // this grammar is deprecated

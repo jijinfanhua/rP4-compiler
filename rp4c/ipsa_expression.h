@@ -96,3 +96,45 @@ public:
         return makeValue(dst);
     }
 };
+
+std::shared_ptr<IpsaOperand> parse_expr(
+    std::shared_ptr<Rp4Operation> v,
+    IpsaHeaderManager* header_manager,
+    const Rp4ActionDef* action_def
+) {
+    if (v->isLiteral()) {
+        return std::make_shared<IpsaConstant>(std::static_pointer_cast<Rp4Literal>(v)->value);
+    } else if (v->isLValue()) {
+        return std::make_shared<IpsaField>(
+            header_manager->lookup(std::static_pointer_cast<Rp4LValue>(v))
+        );
+    } else if (v->isParameter()) {
+        auto& name = std::static_pointer_cast<Rp4Parameter>(v)->name;
+        for (int i = 0; i < action_def->parameters.size(); i++) {
+            if (action_def->parameters[i].name == name) {
+                return std::make_shared<IpsaParameter>(i);
+            }
+        }
+    } else if (v->isBinary()) {
+        auto x = std::static_pointer_cast<Rp4Binary>(v);
+        return std::make_shared<IpsaExpression>(
+            x->op, 
+            parse_expr(x->left, header_manager, action_def), 
+            parse_expr(x->right, header_manager, action_def)
+        );
+    }
+    return nullptr;
+}
+
+IpsaExpression expr_to_expr(std::shared_ptr<Rp4Operation> v, IpsaHeaderManager* header_manager) {
+    auto x = parse_expr(v, header_manager, nullptr);
+    if (x->isConstant() || x->isField()) {
+        return IpsaExpression(
+            OP_EQ, std::make_shared<IpsaConstant>(1), x
+        );
+    } else {
+        return IpsaExpression(
+            *std::static_pointer_cast<IpsaExpression>(x).get()
+        );
+    }
+}

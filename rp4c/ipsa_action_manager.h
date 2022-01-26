@@ -99,33 +99,10 @@ void IpsaActionManager::addAction(const Rp4ActionDef* action_def) {
             }
             action.action_parameters_lengths.push_back(length);
         }
-        std::function<std::shared_ptr<IpsaOperand>(std::shared_ptr<Rp4Operation>)> parse;
-        parse = [&](std::shared_ptr<Rp4Operation> v) -> std::shared_ptr<IpsaOperand> {
-            if (v->isLiteral()) {
-                return std::make_shared<IpsaConstant>(std::static_pointer_cast<Rp4Literal>(v)->value);
-            } else if (v->isLValue()) {
-                return std::make_shared<IpsaField>(
-                    header_manager->lookup(std::static_pointer_cast<Rp4LValue>(v))
-                );
-            } else if (v->isParameter()) {
-                auto& name = std::static_pointer_cast<Rp4Parameter>(v)->name;
-                for (int i = 0; i < action.parameter_num; i++) {
-                    if (action_def->parameters[i].name == name) {
-                        return std::make_shared<IpsaParameter>(i);
-                    }
-                }
-            } else if (v->isBinary()) {
-                auto x = std::static_pointer_cast<Rp4Binary>(v);
-                return std::make_shared<IpsaExpression>(
-                    x->op, parse(x->left), parse(x->right)
-                );
-            }
-            return nullptr;
-        };
         for (auto& expression : action_def->expressions) {
             action.primitives.push_back(IpsaAssign(
                 header_manager->lookup(expression.lvalue),
-                parse(expression.rvalue)
+                parse_expr(expression.rvalue, header_manager, action_def)
             ));
         }
         actions.insert({{

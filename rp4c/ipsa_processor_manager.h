@@ -23,12 +23,25 @@ public:
     IpsaLevelManager* level_manager;
     IpsaActionManager* action_manager;
     IpsaTableManager* table_manager;
+    IpsaProcessorManager(
+        IpsaStageManager* _stage_manager,
+        IpsaHeaderManager* _header_manager,
+        IpsaLevelManager* _level_manager,
+        IpsaActionManager* _action_manager,
+        IpsaTableManager* _table_manager
+    ):
+        stage_manager(_stage_manager),
+        header_manager(_header_manager),
+        level_manager(_level_manager),
+        action_manager(_action_manager),
+        table_manager(_table_manager) 
+        {}
     void initializeStages();
 };
 
 void IpsaProcessorManager::initializeStages() {
     // action to proc table
-    for (auto& [name, stage] : stage_manager->logical_stages) {
+    for (auto& stage : stage_manager->logical_stages) {
         auto& exec_entries = stage.def->executor.entries;
         for (auto& entry : exec_entries) {
             auto action = action_manager->lookup(entry.action_name);
@@ -39,7 +52,7 @@ void IpsaProcessorManager::initializeStages() {
         }
     }
     // remove empty stages
-    for (auto& [name, stage] : stage_manager->logical_stages) {
+    for (auto& stage : stage_manager->logical_stages) {
         if (auto virtual_action = stage.def->get_virtual_action(); virtual_action != nullptr) {
             // replace stage with virtual_action
             auto action = action_manager->lookup(virtual_action->action_name);
@@ -48,7 +61,7 @@ void IpsaProcessorManager::initializeStages() {
             }
             int next_stage_id = stage_manager->lookup(virtual_action->stage_name)->stage_id;
             bool conflict_flag = false;
-            for (auto& [prev_name, prev_stage] : stage_manager->logical_stages) {
+            for (auto& prev_stage : stage_manager->logical_stages) {
                 if (!prev_stage.removed) {
                     for (int i = 0; i < prev_stage.action_proc.size(); i++) {
                         if (prev_stage.action_proc[i].second == stage.stage_id) {
@@ -73,14 +86,14 @@ void IpsaProcessorManager::initializeStages() {
     // reorder the stages
     std::map<int, int> reorder_map;
     int global_stage_id = 0;
-    for (auto& [name, stage] : stage_manager->logical_stages) {
+    for (auto& stage : stage_manager->logical_stages) {
         if (!stage.removed) {
             reorder_map.insert({{stage.stage_id, global_stage_id++}});
         } else {
             reorder_map.insert({{stage.stage_id, -1}});
         }
     }
-    for (auto& [name, stage] : stage_manager->logical_stages) {
+    for (auto& stage : stage_manager->logical_stages) {
         stage.stage_id = reorder_map[stage.stage_id];
         for (int i = 0; i < stage.action_proc.size(); i++) {
             stage.action_proc[i] = {

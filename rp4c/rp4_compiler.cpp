@@ -11,9 +11,12 @@ int main(int argc, char* argv[]) {
     if (compiler.parse(input) == 0) {
         builder.load(compiler.ast.get());
         IpsaOutput out(std::cout);
-        for (auto& [name, table]: builder.table_manager.tables) {
-            out.emit(table.toIpsaValue());
-        }
+        // for (auto& gateway : builder.gateway_manager.gateways) {
+        //     out.emit(gateway.toIpsaValue());
+        // }
+        // for (auto& [name, table]: builder.table_manager.tables) {
+        //     out.emit(table.toIpsaValue());
+        // }
         // for (auto& [name, action] : builder.action_manager.actions) {
         //     out.emit(action.toIpsaValue());
         // }

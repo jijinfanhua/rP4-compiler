@@ -34,7 +34,7 @@ public:
     int table_id; // global table id
     IpsaGatewayTableEntry(int _table_id): table_id(_table_id) {
         type = GTW_ET_TABLE;
-    }    
+    }
     virtual int getId() const { return matcher_id; }
 };
 
@@ -47,9 +47,46 @@ public:
     virtual int getId() const { return stage_id; }
 };
 
+class IpsaNextTableEntry : public IpsaModule {
+public:
+    int bitmap;
+    std::shared_ptr<IpsaGatewayEntry> value;
+    IpsaNextTableEntry() {}
+    IpsaNextTableEntry(int _bitmap, std::shared_ptr<IpsaGatewayEntry> _value) : bitmap(_bitmap), value(std::move(_value)) {}
+    virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
+        std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"bitmap", makeValue(bitmap)},
+            {"value", value->toIpsaValue()}
+        };
+        return makeValue(dst);
+    }
+};
+
+class IpsaNextTable : public IpsaModule {
+public:
+    std::shared_ptr<IpsaGatewayEntry> default_entry;
+    std::vector<IpsaNextTableEntry> entries;
+    IpsaNextTable() {}
+    virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
+        std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"default", default_entry->toIpsaValue()},
+            {"entries", makeValue(entries)}
+        };
+        return makeValue(dst);
+    }
+};
+
 class IpsaGateway : public IpsaModule {
 public:
     std::vector<IpsaExpression> expressions;
-    
+    IpsaNextTable next_table;
+    IpsaGateway() {}
+    virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
+        std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"expressions", makeValue(expressions)},
+            {"next_table", next_table.toIpsaValue()}
+        };
+        return makeValue(dst);
+    }
 };
 

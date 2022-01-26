@@ -14,9 +14,18 @@ public:
     IpsaTableManager(IpsaHeaderManager* _header_manager, IpsaActionManager* _action_manager): 
         header_manager(_header_manager), action_manager(_action_manager) {}
     void load(const Rp4Ast* ast);
+    const IpsaTable* lookup(std::string name) const;
 };
 
-// leave id and memory config undefined
+const IpsaTable* IpsaTableManager::lookup(std::string name) const {
+    if (auto x = tables.find(name); x != std::end(tables)) {
+        return &(x->second);
+    } else {
+        return nullptr;
+    }
+}
+
+// leave id, action to proc and memory config undefined
 void IpsaTableManager::load(const Rp4Ast* ast) {
     global_table_id = 0;
     for (auto& table_def : ast->tables_def.tables) {
