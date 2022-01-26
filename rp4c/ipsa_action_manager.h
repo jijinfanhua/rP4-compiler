@@ -47,6 +47,7 @@ public:
     int global_action_id;
     std::map<std::string, IpsaAction> actions;
     bool concatAction(int id, const IpsaAction* next_action);
+    const IpsaAction* lookup(int action_id) const;
     const IpsaAction* lookup(std::string name) const;
     void addAction(const Rp4ActionDef* action_def);
     IpsaActionManager(IpsaHeaderManager* _header_manager): header_manager(_header_manager) {}
@@ -85,6 +86,15 @@ const IpsaAction* IpsaActionManager::lookup(std::string name) const {
     } else {
         return nullptr;
     }
+}
+
+const IpsaAction* IpsaActionManager::lookup(int action_id) const {
+    for (auto& [name, action] : actions) {
+        if (action.id == action_id) {
+            return &action;
+        }
+    }
+    return nullptr;
 }
 
 void IpsaActionManager::addAction(const Rp4ActionDef* action_def) {

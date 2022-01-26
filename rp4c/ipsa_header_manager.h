@@ -102,6 +102,7 @@ public:
     std::map<std::string, IpsaHeader> headers;
     IpsaHeaderManager() {}
     void load(const Rp4Ast* ast);
+    const IpsaHeader* get_header(std::string name) const;
     const IpsaHeader* get_header(const Rp4Member* member) const;
     const IpsaHeaderField* lookup(std::shared_ptr<Rp4LValue> lvalue) const;
     const IpsaHeaderField* lookup(std::string header_name, std::string field_name) const;
@@ -109,14 +110,18 @@ public:
     void addMetadata(const Rp4StructDef* struct_def);
 };
 
+const IpsaHeader* IpsaHeaderManager::get_header(std::string name) const {
+    if (auto x = headers.find(name); x != std::end(headers)) {
+        return &(x->second);
+    } else {
+        std::cout << "error wrong header name: " << name << std::endl;
+        return nullptr;
+    }
+}
+
 const IpsaHeader* IpsaHeaderManager::get_header(const Rp4Member* member) const {
     if (member->instance_name == this->header_name) {
-        if (auto x = headers.find(member->member_name); x != std::end(headers)) {
-            return &(x->second);
-        } else {
-            std::cout << "error wrong header name: " << member->member_name << std::endl;
-            return nullptr;
-        }
+        return get_header(member->member_name);
     } else {
         std::cout << "error wrong headers name: " << member->instance_name << std::endl;
         return nullptr;

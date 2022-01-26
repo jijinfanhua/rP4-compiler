@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
     if (compiler.parse(input) == 0) {
         builder.load(compiler.ast.get());
         IpsaOutput out(std::cout);
+        out.emit(builder.ipsa.toIpsaValue());
         // for (auto& gateway : builder.gateway_manager.gateways) {
         //     out.emit(gateway.toIpsaValue());
         // }

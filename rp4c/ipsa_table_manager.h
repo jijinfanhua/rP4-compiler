@@ -14,8 +14,32 @@ public:
     IpsaTableManager(IpsaHeaderManager* _header_manager, IpsaActionManager* _action_manager): 
         header_manager(_header_manager), action_manager(_action_manager) {}
     void load(const Rp4Ast* ast);
+    const IpsaTable* lookup(int table_id) const;
     const IpsaTable* lookup(std::string name) const;
+    void setMatcherId(int table_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc);
 };
+
+// also set action_to_proc list
+void IpsaTableManager::setMatcherId(int table_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc) {
+    for (auto& [name, table] : tables) {
+        if (table.table_id == table_id) {
+            table.id = matcher_id;
+            for (auto [action, proc] : action_proc) {
+                table.action_to_proc.push_back(IpsaActionProcPair(action, proc));
+            }
+            break;
+        }
+    }
+}
+
+const IpsaTable* IpsaTableManager::lookup(int table_id) const {
+    for (auto& [name, table] : tables) {
+        if (table.table_id == table_id) {
+            return &table;
+        }
+    }
+    return nullptr;
+}
 
 const IpsaTable* IpsaTableManager::lookup(std::string name) const {
     if (auto x = tables.find(name); x != std::end(tables)) {

@@ -19,6 +19,7 @@ class IpsaGatewayEntry : public IpsaModule {
 public:
     IpsaGatewayEntryType type;
     virtual int getId() const = 0;
+    virtual void setMatcherId(int table_id, int matcher_id) {}
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"type", makeValue(to_string(type))},
@@ -34,6 +35,11 @@ public:
     int table_id; // global table id
     IpsaGatewayTableEntry(int _table_id): table_id(_table_id) {
         type = GTW_ET_TABLE;
+    }
+    virtual void setMatcherId(int table_id, int matcher_id) {
+        if (this->table_id == table_id) {
+            this->matcher_id = matcher_id;
+        }
     }
     virtual int getId() const { return matcher_id; }
 };
@@ -67,6 +73,12 @@ public:
     std::shared_ptr<IpsaGatewayEntry> default_entry;
     std::vector<IpsaNextTableEntry> entries;
     IpsaNextTable() {}
+    void setMatcherId(int table_id, int matcher_id) {
+        default_entry->setMatcherId(table_id, matcher_id);
+        for (auto& entry : entries) {
+            entry.value->setMatcherId(table_id, matcher_id);
+        }
+    }
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"default", default_entry->toIpsaValue()},

@@ -5,6 +5,7 @@
 #include "ipsa_level_manager.h"
 #include "ipsa_action_manager.h"
 #include "ipsa_table_manager.h"
+#include "ipsa_gateway_manager.h"
 
 /*----------------------------------------------------------------
     does not aggregate the stages
@@ -37,6 +38,7 @@ public:
         table_manager(_table_manager) 
         {}
     void initializeStages();
+    void setupStages(IpsaGatewayManager* gateway_manager);
 };
 
 void IpsaProcessorManager::initializeStages() {
@@ -100,6 +102,28 @@ void IpsaProcessorManager::initializeStages() {
                 stage.action_proc[i].first,
                 reorder_map[stage.action_proc[i].second]
             };
+        }
+    }
+    // generate tables
+    for (auto& stage : stage_manager->logical_stages) {
+        for (auto& switch_entry : stage.def->matcher.switch_entries) {
+            if (switch_entry.value->isTableStmt()) {
+                auto& name = std::static_pointer_cast<Rp4SwitchTableStmt>(switch_entry.value)->name;
+                stage.table_id.push_back(table_manager->lookup(name)->table_id);
+            }
+        }
+    }
+    // find relied headers
+
+}
+
+void IpsaProcessorManager::setupStages(IpsaGatewayManager* gateway_manager) {
+    // set id in tables and the corresponding gateway entries (with action2proc map)
+    for (auto& stage : stage_manager->logical_stages) {
+        for (int matcher_id = 0; int table_id : stage.table_id) {
+            auto& gateway = gateway_manager->gateways[stage.gateway_id];
+            table_manager->setMatcherId(table_id, matcher_id, stage.action_proc);
+            gateway.next_table.setMatcherId(table_id, matcher_id++);
         }
     }
 }
