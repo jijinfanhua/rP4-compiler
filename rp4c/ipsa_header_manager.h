@@ -102,6 +102,7 @@ public:
     std::map<std::string, IpsaHeader> headers;
     IpsaHeaderManager() {}
     void load(const Rp4Ast* ast);
+    const IpsaHeader* get_header(int header_id) const;
     const IpsaHeader* get_header(std::string name) const;
     const IpsaHeader* get_header(const Rp4Member* member) const;
     const IpsaHeaderField* lookup(std::shared_ptr<Rp4LValue> lvalue) const;
@@ -109,6 +110,15 @@ public:
     void addHeader(const Rp4HeaderDef* header_def, std::string name);
     void addMetadata(const Rp4StructDef* struct_def);
 };
+
+const IpsaHeader* IpsaHeaderManager::get_header(int header_id) const {
+    for (auto& [name, header] : headers) {
+        if (header.header_id == header_id) {
+            return &header;
+        }
+    }
+    return nullptr;
+}
 
 const IpsaHeader* IpsaHeaderManager::get_header(std::string name) const {
     if (auto x = headers.find(name); x != std::end(headers)) {

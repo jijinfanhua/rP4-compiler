@@ -126,11 +126,11 @@ void IpsaBuilder::allocateProcessors() {
         auto& processor = ipsa.processors[i];
         if (int x = memory.physical_proc_id[i]; x >= 0) {
             processor = std::make_shared<IpsaProcessor>(x);
-            auto& stage = stage_manager.logical_stages[x];
+            auto& stage = *stage_manager.lookup(x);
             // parser
             auto& parser_levels = distribution.distributed_levels[x];
             for (int j = 0; j < parser_levels.size(); j += ipsa_configuration::MAX_LEVEL) {
-                int target_stage = x;
+                int target_stage = i;
                 if (j + ipsa_configuration::MAX_LEVEL < parser_levels.size()) { // not the last
                     for (int k = 0; k < ipsa_configuration::PROC_COUNT; k++) { // allocate a new processor
                         if (ipsa.processors[k] == nullptr && memory.physical_proc_id[k] < 0) {
@@ -139,7 +139,7 @@ void IpsaBuilder::allocateProcessors() {
                             break;
                         }
                     }
-                    if (target_stage == x) {
+                    if (target_stage == i) {
                         std::cout << "error no processors can be allcoated" << std::endl;
                     }
                 }
@@ -151,7 +151,7 @@ void IpsaBuilder::allocateProcessors() {
                         level_manager.levels[level_id].toIpsaValue()
                     );
                 }
-                if (target_stage != x) {
+                if (target_stage != i) {
                     // build parser-only stage
                     int next_stage_id = x;
                     if (j + ipsa_configuration::MAX_LEVEL*2 < parser_levels.size()) {

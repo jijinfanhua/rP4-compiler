@@ -25,6 +25,7 @@ public:
     void load(const Rp4Ast* ast);
     void add_stage(const Rp4StageDef* stage_def, bool in_ingress);
     const IpsaStage* lookup(std::string stage_name) const;
+    const IpsaStage* lookup(int stage_id) const;
 };
 
 void IpsaStageManager::load(const Rp4Ast* ast) {
@@ -53,4 +54,13 @@ const IpsaStage* IpsaStageManager::lookup(std::string stage_name) const {
     } else {
         return nullptr;
     }
+}
+
+const IpsaStage* IpsaStageManager::lookup(int stage_id) const {
+    for (auto& stage : logical_stages) {
+        if (stage.stage_id == stage_id) {
+            return &stage;
+        }
+    }
+    return nullptr;
 }

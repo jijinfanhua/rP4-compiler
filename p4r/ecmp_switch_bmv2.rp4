@@ -467,96 +467,17 @@ tables {
 }
 
 control MyIngress {
-	stage node_5 {
-		parser {
-			ipv4;
-		};
-		matcher {
-			switch (hdr.ipv4.isValid()) {
-				0b1: table(validate_ipv4);
-				*: stage(node_7);
-			}
-		};
-		executor {
-			malformed_pkt_16: rmac_s;
-			valid_ipv4_pkt: rmac_s;
-			NoAction_3: rmac_s;
-		};
-	}
-	stage node_7 {
-		parser {
-			ipv6;
-		};
-		matcher {
-			switch (hdr.ipv6.isValid()) {
-				0b1: table(validate_ipv6);
-				*: stage(rmac_s);
-			}
-		};
-		executor {
-			malformed_pkt_17: rmac_s;
-			valid_ipv6_pkt: rmac_s;
-			NoAction_4: rmac_s;
-		};
-	}
-	stage node_11 {
+	stage port_mapping_s {
 		parser {
 		};
 		matcher {
-			switch ((lkp_0.ip_version == 0x04)) {
-				0b1: table(tbl_act_0);
-				*: table(tbl_act_3);
+			switch (1) {
+				0b1: table(port_mapping);
 			}
 		};
 		executor {
-			act_1: fib_fib_s;
-			act_4: fibv6_fib_s;
-		};
-	}
-	stage node_16 {
-		parser {
-		};
-		matcher {
-			switch (meta.fib_tmp) {
-				0b0: table(fib_fib_lpm);
-				*: stage(tbl_act_6_s);
-			}
-		};
-		executor {
-			fib_fib_hit_23: tbl_act_6_s;
-			fib_fib_miss_21: tbl_act_6_s;
-		};
-	}
-	stage node_22 {
-		parser {
-		};
-		matcher {
-			switch (meta.fibv6_tmp) {
-				0b0: table(fibv6_fib_lpm);
-				*: stage(tbl_act_6_s);
-			}
-		};
-		executor {
-			fibv6_fib_hit_27: tbl_act_6_s;
-			fibv6_fib_miss_25: tbl_act_6_s;
-		};
-	}
-	stage node_26 {
-		parser {
-			ethernet;
-			ipv4;
-			ipv6;
-		};
-		matcher {
-			switch (meta.nexthop_routed) {
-				0b1: table(ip_rewrite);
-				*: stage(dmac_s);
-			}
-		};
-		executor {
-			rewrite_ipv4: smac_rewrite_s;
-			rewrite_ipv6: smac_rewrite_s;
-			NoAction_6: smac_rewrite_s;
+			set_port_attributes: port_vlan_to_bd_mapping_s;
+			NoAction_0: port_vlan_to_bd_mapping_s;
 		};
 	}
 	stage port_vlan_to_bd_mapping_s {
@@ -739,6 +660,98 @@ control MyIngress {
 		executor {
 			dmac_hit: None;
 			dmac_miss: None;
+		};
+	}
+	stage node_5 {
+		parser {
+			ipv4;
+		};
+		matcher {
+			switch (hdr.ipv4.isValid()) {
+				0b1: table(validate_ipv4);
+				*: stage(node_7);
+			}
+		};
+		executor {
+			malformed_pkt_16: rmac_s;
+			valid_ipv4_pkt: rmac_s;
+			NoAction_3: rmac_s;
+		};
+	}
+	stage node_7 {
+		parser {
+			ipv6;
+		};
+		matcher {
+			switch (hdr.ipv6.isValid()) {
+				0b1: table(validate_ipv6);
+				*: stage(rmac_s);
+			}
+		};
+		executor {
+			malformed_pkt_17: rmac_s;
+			valid_ipv6_pkt: rmac_s;
+			NoAction_4: rmac_s;
+		};
+	}
+	stage node_11 {
+		parser {
+		};
+		matcher {
+			switch ((lkp_0.ip_version == 0x04)) {
+				0b1: table(tbl_act_0);
+				*: table(tbl_act_3);
+			}
+		};
+		executor {
+			act_1: fib_fib_s;
+			act_4: fibv6_fib_s;
+		};
+	}
+	stage node_16 {
+		parser {
+		};
+		matcher {
+			switch (meta.fib_tmp) {
+				0b0: table(fib_fib_lpm);
+				*: stage(tbl_act_6_s);
+			}
+		};
+		executor {
+			fib_fib_hit_23: tbl_act_6_s;
+			fib_fib_miss_21: tbl_act_6_s;
+		};
+	}
+	stage node_22 {
+		parser {
+		};
+		matcher {
+			switch (meta.fibv6_tmp) {
+				0b0: table(fibv6_fib_lpm);
+				*: stage(tbl_act_6_s);
+			}
+		};
+		executor {
+			fibv6_fib_hit_27: tbl_act_6_s;
+			fibv6_fib_miss_25: tbl_act_6_s;
+		};
+	}
+	stage node_26 {
+		parser {
+			ethernet;
+			ipv4;
+			ipv6;
+		};
+		matcher {
+			switch (meta.nexthop_routed) {
+				0b1: table(ip_rewrite);
+				*: stage(dmac_s);
+			}
+		};
+		executor {
+			rewrite_ipv4: smac_rewrite_s;
+			rewrite_ipv6: smac_rewrite_s;
+			NoAction_6: smac_rewrite_s;
 		};
 	}
 }

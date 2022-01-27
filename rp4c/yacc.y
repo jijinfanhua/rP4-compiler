@@ -279,7 +279,7 @@ transition_entry:
     }
     |   key_def ':' ACCEPT ';'
     {
-        $$ = Rp4TransitionEntry($1, "accept", true);
+        $$ = Rp4TransitionEntry($1, "accept", 0);
     }
     ;
 

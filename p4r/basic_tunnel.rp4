@@ -21,16 +21,24 @@ header ipv4_t {
 	bit<32>	srcAddr;
 	bit<32>	dstAddr;
 }
-
 struct metadata {
 } meta;
-
 struct headers {
-	ethernet_t ethernet
-	myTunnel_t myTunnel
-	ipv4_t ipv4
+	ethernet_t	ethernet;
+	myTunnel_t	myTunnel;
+	ipv4_t	ipv4;
 } hdr;
 
+struct standard_metadata_t {
+    bit<9> ingress_port;
+    bit<9> egress_spec;
+    bit<9> egress_port;
+    bit<32> clone_spec;
+    bit<32> instance_type;
+    bit<1> drop;
+    bit<16> recirculate_port;
+    bit<32> packet_length;
+} standard_metadata;
 parser MyParser(packet_in packet) {
 	state start {
 		packet.extract(hdr.ethernet);
@@ -56,8 +64,11 @@ parser MyParser(packet_in packet) {
 actions {
 	action NoAction() {
 	}
-	action drop() {
-		mark_to_drop(standard_metadata);
+	action drop_1() {
+		standard_metadata.drop = 1;
+	}
+	action drop_2() {
+		standard_metadata.drop = 1;
 	}
 	action ipv4_forward(bit<48> dstAddr, bit<9> port) {
 		standard_metadata.egress_spec = port;
@@ -76,14 +87,16 @@ tables {
 			hdr.ipv4.dstAddr: lpm;
 		}
 		size = 1024;
-		default_action = drop();
+		value_width = 73;
+		default_action = drop_1;
 	}
 	table myTunnel_exact {
 		key = {
 			hdr.myTunnel.dst_id: exact;
 		}
 		size = 1024;
-		default_action = drop();
+		value_width = 25;
+		default_action = drop_2;
 	}
 }
 
@@ -100,7 +113,7 @@ control MyIngress {
 			}
 		};
 		executor {
-			drop: node_4;
+			drop_3: node_4;
 			ipv4_forward: node_4;
 			NoAction: node_4;
 		};
@@ -116,7 +129,7 @@ control MyIngress {
 			}
 		};
 		executor {
-			drop: None;
+			drop_4: None;
 			myTunnel_forward: None;
 		};
 	}

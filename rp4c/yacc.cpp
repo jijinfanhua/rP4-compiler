@@ -2035,7 +2035,7 @@ yyreduce:
 /* Line 1792 of yacc.c  */
 #line 281 "yacc.y"
     {
-        (yyval.sv_transition_entry) = Rp4TransitionEntry((yyvsp[(1) - (4)].sv_key), "accept", true);
+        (yyval.sv_transition_entry) = Rp4TransitionEntry((yyvsp[(1) - (4)].sv_key), "accept", 0);
     }
     break;
 

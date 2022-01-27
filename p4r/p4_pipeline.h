@@ -77,6 +77,7 @@ public:
 class P4Pipeline {
 public:
     std::string name;
+    std::string init_table;
     std::vector<P4Table> tables;
     std::vector<P4Conditional> conditionals;
 };
@@ -119,6 +120,10 @@ void P4Pipelines::initialize_stage_rename() const {
     auto& onames = stage_rename->original_names;
     for (auto& pipe : *this) {
         stage_rename->add_names(pipe.conditionals, [](auto& c) { return c.name; });
+        auto& init = pipe.init_table;
+        if (std::find(std::begin(onames), std::end(onames), init) == std::end(onames)) {
+            stage_rename->add_name(init, true);
+        }
         for (auto& t : pipe.tables) { // direct tables without gateway
             for (auto [key, value] : t.next_tables) {
                 if (std::find(std::begin(onames), std::end(onames), value) == std::end(onames)) {
@@ -187,6 +192,11 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
             return s == name;
         }) != std::end(stage_rename->original_names);
     };
+    auto is_true_stage = [&](std::string name, P4Pipeline const & p) {
+        return std::find_if(std::begin(p.conditionals), std::end(p.conditionals), [&](auto& c) {
+            return c.name == name;
+        }) != std::end(p.conditionals);
+    };
     out << "tables {" << std::endl;
     for (auto & pipe : vp) {
         for (auto & table : pipe.tables) {
@@ -249,60 +259,137 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
             out << p.name;
         }
         out << " {" << std::endl;
-        for (auto & c : p.conditionals) {
-            out << "\tstage " << vp.translate_stage_name(c.name) << " {" << std::endl;
-            std::set<std::string> hdr_names;
-            for (auto table_name : {c.true_next, c.false_next}) {
-                if (auto t = std::find_if(std::begin(p.tables), std::end(p.tables), [&](auto& table) {
-                    return table.name == table_name;
-                }); t != std::end(p.tables)) {
-                    for (auto & key : t->key) {
+        // initial state
+        std::vector<const P4Conditional*> conditionals;
+        for (auto& c : p.conditionals) {
+            conditionals.push_back(&c);
+        }
+        std::vector<const P4Table*> tables;
+        for (auto& t : p.tables) {
+            tables.push_back(&t);
+        }
+        if (is_true_stage(p.init_table, p)) {
+            // swap to first
+            int x = -1;
+            for (int i = 0; i < p.conditionals.size(); i++) {
+                if (p.conditionals[i].name == p.init_table) {
+                    x = i; break;
+                }
+            }
+            if (x >= 0) {
+                std::swap(conditionals[0], conditionals[x]);
+            }
+        } else {
+            int x = -1;
+            for (int i = 0; i < p.tables.size(); i++) {
+                if (p.tables[i].name == p.init_table) {
+                    x = i; break;
+                }
+            }
+            if (x >= 0) {
+                std::swap(tables[0], tables[x]);
+            }
+        }
+        auto conditionals_output = [&]() {
+            for (auto cp : conditionals) {
+                auto& c = *cp;
+                out << "\tstage " << vp.translate_stage_name(c.name) << " {" << std::endl;
+                std::set<std::string> hdr_names;
+                for (auto table_name : {c.true_next, c.false_next}) {
+                    if (auto t = std::find_if(std::begin(p.tables), std::end(p.tables), [&](auto& table) {
+                        return table.name == table_name;
+                    }); t != std::end(p.tables)) {
+                        for (auto & key : t->key) {
+                            P4Field temp(key.target);
+                            if (temp.is_header()) {
+                                hdr_names.insert(temp[0]);
+                            }
+                        }
+                    }
+                }
+                auto [v, b] = c.expression.parse();
+                for (auto pp : v) {
+                    pp->add_to_hdr_names_set(hdr_names);
+                }
+                out << "\t\tparser {" << std::endl;
+                for (auto& hn : hdr_names) {
+                    out << "\t\t\t" << hn << ";" << std::endl;
+                }
+                out << "\t\t};" << std::endl;
+                out << "\t\tmatcher {" << std::endl;
+                out << "\t\t\tswitch (";
+                for (bool first = true; auto pp : v) {
+                    if (!first) {
+                        out << ", ";
+                    } else {
+                        first = false;
+                    }
+                    pp->output(out);
+                }
+                out << ") {" << std::endl;
+                for (auto& cond : b) {
+                    out << "\t\t\t\t0b" << cond << ": ";
+                    out_next(c.true_next);
+                    out << ";" << std::endl;
+                }
+                out << "\t\t\t\t*: ";
+                out_next(c.false_next);
+                out << ";" << std::endl;
+                out << "\t\t\t}" << std::endl;
+                out << "\t\t};" << std::endl;
+                out << "\t\texecutor {" << std::endl;
+                for (auto t = std::begin(p.tables); t != std::end(p.tables); t++) {
+                    if ((t->name == c.true_next || t->name == c.false_next) && !is_stage(t->name)) {
+                        for (int i = 0; auto [key, value] : t->next_tables) {
+                            out << "\t\t\t";
+                            if (key == "__HIT__" || key == "__MISS__") {
+                                out << vp.actions.translate_name(t->name + key, 0);
+                            } else {
+                                out << vp.actions.translate_name(key, t->action_ids[i++]);
+                            }
+                            out << ": ";
+                            if (value.size() == 0) {
+                                out << "None";
+                            } else {
+                                out << vp.translate_stage_name(value);
+                            }
+                            out << ";" << std::endl;
+                        }
+                    }
+                }
+                out << "\t\t};" << std::endl;
+                out << "\t}" << std::endl;
+            }
+        };
+        auto tables_output = [&]() {
+            for (auto pt : tables) {
+                auto& t = *pt;
+                if (is_stage(t.name)) {
+                    out << "\tstage " << vp.translate_stage_name(t.name) << " {" << std::endl;
+                    std::set<std::string> hdr_names;
+                    for (auto & key : t.key) {
                         P4Field temp(key.target);
                         if (temp.is_header()) {
                             hdr_names.insert(temp[0]);
                         }
                     }
-                }
-            }
-            auto [v, b] = c.expression.parse();
-            for (auto pp : v) {
-                pp->add_to_hdr_names_set(hdr_names);
-            }
-            out << "\t\tparser {" << std::endl;
-            for (auto& hn : hdr_names) {
-                out << "\t\t\t" << hn << ";" << std::endl;
-            }
-            out << "\t\t};" << std::endl;
-            out << "\t\tmatcher {" << std::endl;
-            out << "\t\t\tswitch (";
-            for (bool first = true; auto pp : v) {
-                if (!first) {
-                    out << ", ";
-                } else {
-                    first = false;
-                }
-                pp->output(out);
-            }
-            out << ") {" << std::endl;
-            for (auto& cond : b) {
-                out << "\t\t\t\t0b" << cond << ": ";
-                out_next(c.true_next);
-                out << ";" << std::endl;
-            }
-            out << "\t\t\t\t*: ";
-            out_next(c.false_next);
-            out << ";" << std::endl;
-            out << "\t\t\t}" << std::endl;
-            out << "\t\t};" << std::endl;
-            out << "\t\texecutor {" << std::endl;
-            for (auto t = std::begin(p.tables); t != std::end(p.tables); t++) {
-                if ((t->name == c.true_next || t->name == c.false_next) && !is_stage(t->name)) {
-                    for (int i = 0; auto [key, value] : t->next_tables) {
+                    out << "\t\tparser {" << std::endl;
+                    for (auto& hn : hdr_names) {
+                        out << "\t\t\t" << hn << ";" << std::endl;
+                    }
+                    out << "\t\t};" << std::endl;
+                    out << "\t\tmatcher {" << std::endl;
+                    out << "\t\t\tswitch (1) {" << std::endl;
+                    out << "\t\t\t\t0b1: table(" << vp.translate_table_name(t.name) << ");" << std::endl;
+                    out << "\t\t\t}" << std::endl;
+                    out << "\t\t};" << std::endl;
+                    out << "\t\texecutor {" << std::endl;
+                    for (int i = 0; auto [key, value] : t.next_tables) {
                         out << "\t\t\t";
                         if (key == "__HIT__" || key == "__MISS__") {
-                            out << vp.actions.translate_name(t->name + key, 0);
+                            out << vp.actions.translate_name(t.name + key, 0);
                         } else {
-                            out << vp.actions.translate_name(key, t->action_ids[i++]);
+                            out << vp.actions.translate_name(key, t.action_ids[i++]);
                         }
                         out << ": ";
                         if (value.size() == 0) {
@@ -312,50 +399,17 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
                         }
                         out << ";" << std::endl;
                     }
+                    out << "\t\t};" << std::endl;
+                    out << "\t}" << std::endl;
                 }
             }
-            out << "\t\t};" << std::endl;
-            out << "\t}" << std::endl;
-        }
-        for (auto & t : p.tables) {
-            if (is_stage(t.name)) {
-                out << "\tstage " << vp.translate_stage_name(t.name) << " {" << std::endl;
-                std::set<std::string> hdr_names;
-                for (auto & key : t.key) {
-                    P4Field temp(key.target);
-                    if (temp.is_header()) {
-                        hdr_names.insert(temp[0]);
-                    }
-                }
-                out << "\t\tparser {" << std::endl;
-                for (auto& hn : hdr_names) {
-                    out << "\t\t\t" << hn << ";" << std::endl;
-                }
-                out << "\t\t};" << std::endl;
-                out << "\t\tmatcher {" << std::endl;
-                out << "\t\t\tswitch (1) {" << std::endl;
-                out << "\t\t\t\t0b1: table(" << vp.translate_table_name(t.name) << ");" << std::endl;
-                out << "\t\t\t}" << std::endl;
-                out << "\t\t};" << std::endl;
-                out << "\t\texecutor {" << std::endl;
-                for (int i = 0; auto [key, value] : t.next_tables) {
-                    out << "\t\t\t";
-                    if (key == "__HIT__" || key == "__MISS__") {
-                        out << vp.actions.translate_name(t.name + key, 0);
-                    } else {
-                        out << vp.actions.translate_name(key, t.action_ids[i++]);
-                    }
-                    out << ": ";
-                    if (value.size() == 0) {
-                        out << "None";
-                    } else {
-                        out << vp.translate_stage_name(value);
-                    }
-                    out << ";" << std::endl;
-                }
-                out << "\t\t};" << std::endl;
-                out << "\t}" << std::endl;
-            }
+        };
+        if (is_true_stage(p.init_table, p)) {
+            conditionals_output();
+            tables_output();
+        } else {
+            tables_output();
+            conditionals_output();
         }
         out << "}" << std::endl;
     }

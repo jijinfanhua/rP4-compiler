@@ -24,6 +24,7 @@ public:
     IpsaLevelManager* level_manager;
     IpsaActionManager* action_manager;
     IpsaTableManager* table_manager;
+    
     IpsaProcessorManager(
         IpsaStageManager* _stage_manager,
         IpsaHeaderManager* _header_manager,
@@ -61,7 +62,8 @@ void IpsaProcessorManager::initializeStages() {
             if (action->parameter_num > 0) {
                 continue; // cannot be removed
             }
-            int next_stage_id = stage_manager->lookup(virtual_action->stage_name)->stage_id;
+            auto next_stage = stage_manager->lookup(virtual_action->stage_name);
+            int next_stage_id = next_stage == nullptr ? -1 : next_stage->stage_id;
             bool conflict_flag = false;
             for (auto& prev_stage : stage_manager->logical_stages) {
                 if (!prev_stage.removed) {
@@ -86,7 +88,7 @@ void IpsaProcessorManager::initializeStages() {
         }
     }
     // reorder the stages
-    std::map<int, int> reorder_map;
+    std::map<int, int> reorder_map = {{-1, -1}};
     int global_stage_id = 0;
     for (auto& stage : stage_manager->logical_stages) {
         if (!stage.removed) {
@@ -113,8 +115,6 @@ void IpsaProcessorManager::initializeStages() {
             }
         }
     }
-    // find relied headers
-
 }
 
 void IpsaProcessorManager::setupStages(IpsaGatewayManager* gateway_manager) {

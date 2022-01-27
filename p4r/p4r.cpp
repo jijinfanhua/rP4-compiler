@@ -133,6 +133,7 @@ void extract_pipelines() {
     for (auto & pipeline_json : j.at("pipelines")) {
         P4Pipeline pipeline;
         pipeline.name = pipeline_json.at("name").get<std::string>();
+        pipeline.init_table = safe_convert(pipeline_json.at("init_table"));
         for (auto & table_json : pipeline_json.at("tables")) {
             P4Table table;
             table.name = table_json.at("name").get<std::string>();

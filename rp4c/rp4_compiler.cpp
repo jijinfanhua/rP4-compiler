@@ -6,12 +6,12 @@ IpsaBuilder builder;
 
 int main(int argc, char* argv[]) {
     const char* input = argv[1];
-    const char* output = (argc > 2 ? argv[2] : "");
+    const char* output = argv[2];
     Rp4Compiler compiler;
     if (compiler.parse(input) == 0) {
         builder.load(compiler.ast.get());
+        freopen(output, "w", stdout);
         IpsaOutput out(std::cout);
-        out.emit(builder.ipsa.toIpsaValue());
         // for (auto& gateway : builder.gateway_manager.gateways) {
         //     out.emit(gateway.toIpsaValue());
         // }
@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
         //     out.emit(level.toIpsaValue());
         // }
         // compiler.print(output);
+        out.emit(builder.ipsa.toIpsaValue());
     } else {
         std::cout << "parse error" << std::endl;
     }
