@@ -7,6 +7,13 @@
 Egress 接在 Ingress 后面 stage
 
 json = {
+	metadata = [
+		{
+			id = INT,
+			offset = INT // by bytes // * 2 ; [20, _] -> [0, 40]
+			length = INT // by bytes
+		}, ... // fix standard_meta . id = [ 31, 0, 20 ] next offset accumulated from 20
+	]
 	"processor_0" : ...,
 	"processor_1" : ...,
 	...
@@ -14,7 +21,7 @@ json = {
 }
 
 processor = {
-	id = INT
+	// id = INT -> = processor_"x"
 	parser = {...}
 	gateway = {...}
 	matcher = {...}

@@ -1,0 +1,43 @@
+rp4rt : 持续接受用户命令的交互式命令行
+	p4r : p4 json -> rp4
+	rp4c : rp4 -> rp4 json + [status]
+	rp4c : rp4 [status] -> rp4 json + [new status]
+	<cmd>
+
+<cmd>
+table_add <STR table_name> <STR action_name> <KEY key> => <BIGINT action_para>
+
+rp4c json:
+json = {
+	is_incremental = 1 | 0 
+		// whether table is unmodified
+		// if is_incremental = 1 : only display modified processors (or null)
+		// if is_incremental = 0 : whole json as first compilation
+	"processor_x" : ... // null iff no change
+}
+
+KEY key = lit | lit &&& lit | ipv4 | mac | ipv6
+	lit = int | hex
+
+table update json
+json = {
+	type = ADD | MOD | DEL
+	proc_id = INT
+	matcher_id = INT // locate the table
+	keys = [
+		{
+			width = INT // by bit
+			value = [255, 255, 255, 255] // list of uint_8
+				// 0x111 = 0x0111 = [1, 17] (right-aligned)
+				// 1(9-bit) = 0x001 = [0, 1]
+			mask = [ ... ] // same as value
+		}, ...
+	]
+	action_id = INT
+	action_para = [
+		{
+			width = INT // by bit
+			value = [ ... ] // right-aligned
+		}, ...
+	]
+}
