@@ -29,7 +29,16 @@ public:
     IpsaGateway* gateway = nullptr;
     std::vector<const IpsaTable*> matcher;
     std::vector<const IpsaAction*> executor;
+
+    // if the gateway is defined by "new" (user-defined processor),
+    // use this variable to mark it and delete when the processor is destroyed
+    bool user_gateway = false;
     IpsaProcessor(int _id): id(_id) {}
+    ~IpsaProcessor() {
+        if (user_gateway) {
+            delete gateway;
+        }
+    }
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"id", makeValue(id)},
@@ -52,12 +61,15 @@ public:
 
 class Ipsa : public IpsaModule {
 public:
+    const IpsaMetadata* metadata;
     std::vector<std::shared_ptr<IpsaProcessor>> processors;
-    Ipsa() {
+    Ipsa(const IpsaMetadata* _metadata): metadata(_metadata) {
         processors.resize(ipsa_configuration::PROC_COUNT);
     }
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
-        std::map<std::string, std::shared_ptr<IpsaValue>> dst;
+        std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"metadata", metadata->toIpsaValue()},
+        };
         for (int i = 0; i < ipsa_configuration::PROC_COUNT; i++) {
             dst.insert({{
                 "processor_" + std::to_string(i),
@@ -96,7 +108,7 @@ public:
         ),
         distribution(&processor_manager),
         memory(&processor_manager, &distribution),
-        ipsa() {}
+        ipsa(&(header_manager.metadata)) {}
     void allocateProcessors();
     void load(const Rp4Ast* ast) {
         header_manager.load(ast);
@@ -157,6 +169,8 @@ void IpsaBuilder::allocateProcessors() {
                     if (j + ipsa_configuration::MAX_LEVEL*2 < parser_levels.size()) {
                         next_stage_id = extra_processor_id;
                     }
+                    // may cause memory leak, set the mark "user_gateway" to avoid it
+                    ipsa.processors[target_stage]->user_gateway = true;
                     auto gateway = ipsa.processors[target_stage]->gateway = new IpsaGateway();
                     gateway->next_table.default_entry = std::make_shared<IpsaGatewayStageEntry>(next_stage_id);
                     // no matcher and executor

@@ -27,7 +27,7 @@ std::ostream& operator<<(std::ostream& out, P4Json const & p4) {
     bit<1> drop;\n\
     bit<16> recirculate_port;\n\
     bit<32> packet_length;\n\
-} standard_metadata;" << std::endl;
+} standard_metadata;\n" << std::endl;
     out << p4.parsers << std::endl;
     out << p4.actions << std::endl;
     out << p4.pipelines << std::endl;

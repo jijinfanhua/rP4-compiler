@@ -41,13 +41,23 @@ public:
 class IpsaHeader {
 public:
     bool is_header;
+    bool is_standard_metadata = false;
     int header_id;
     int offset;
     std::map<std::string, IpsaHeaderField> fields;
+    int getLength() const;
     const IpsaHeaderField* lookup(std::string field_name) const;
     IpsaHeader(const Rp4HeaderDef* header_def, int id);
     IpsaHeader(const Rp4StructDef* struct_def, int id);
 };
+
+int IpsaHeader::getLength() const {
+    int width = 0;
+    for (auto& [name, field] : fields) {
+        width += field.field_length;
+    }
+    return (width + 7) / 8;
+}
 
 const IpsaHeaderField* IpsaHeader::lookup(std::string field_name) const {
     if (auto x = fields.find(field_name); x != std::end(fields)) {
@@ -59,7 +69,7 @@ const IpsaHeaderField* IpsaHeader::lookup(std::string field_name) const {
 }
 
 IpsaHeader::IpsaHeader(const Rp4HeaderDef* header_def, int id):
-    header_id(id), is_header(true) {
+    header_id(id), is_header(true), is_standard_metadata(false) {
     fields.insert({{
         "isValid", IpsaHeaderField(FT_VALID, id, 0, 0)
     }});
@@ -78,6 +88,9 @@ IpsaHeader::IpsaHeader(const Rp4HeaderDef* header_def, int id):
 
 IpsaHeader::IpsaHeader(const Rp4StructDef* struct_def, int id):
     header_id(id), is_header(false) {
+    if (struct_def->name == "standard_metadata") {
+        is_standard_metadata = true;
+    }
     fields.insert({{
         "isValid", IpsaHeaderField(FT_VALID, id, 0, 0)
     }});
@@ -94,12 +107,39 @@ IpsaHeader::IpsaHeader(const Rp4StructDef* struct_def, int id):
     }
 }
 
+class IpsaMetadataEntry : public IpsaModule {
+public:
+    int id;
+    int offset;
+    int length;
+    IpsaMetadataEntry(int _id, int _offset, int _length):
+        id(_id), offset(_offset), length(_length) {}
+    virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
+        std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"id", makeValue(id)},
+            {"offset", makeValue(offset)},
+            {"length", makeValue(length)}
+        };
+        return makeValue(dst);
+    }
+};
+
+class IpsaMetadata : public IpsaModule {
+public:
+    std::vector<IpsaMetadataEntry> entries;
+    IpsaMetadata() {}
+    virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
+        return makeValue(entries);
+    }
+};
+
 // includes metadata
 class IpsaHeaderManager {
 public:
     int global_header_id;
     std::string header_name;
     std::map<std::string, IpsaHeader> headers;
+    IpsaMetadata metadata;
     IpsaHeaderManager() {}
     void load(const Rp4Ast* ast);
     const IpsaHeader* get_header(int header_id) const;
@@ -178,8 +218,14 @@ void IpsaHeaderManager::addHeader(const Rp4HeaderDef* header_def, std::string na
 
 void IpsaHeaderManager::addMetadata(const Rp4StructDef* struct_def) {
     if (headers.find(struct_def->name) == headers.end()) {
+        int header_id = global_header_id;
+        if (struct_def->name == "standard_metadata") {
+            header_id = 31; // fixed
+        } else {
+            global_header_id++;
+        }
         headers.insert({
-            {struct_def->name, IpsaHeader(struct_def, global_header_id++)}
+            {struct_def->name, IpsaHeader(struct_def, header_id)},
         });
     }
 }
@@ -205,6 +251,18 @@ void IpsaHeaderManager::load(const Rp4Ast* ast) {
             }
         } else {
             addMetadata(&struct_def);
+        }
+    }
+    // generate metadata
+    metadata.entries.push_back(IpsaMetadataEntry(31, 0, 20));
+    int offset = 20;
+    for (auto& [name, header] : headers) {
+        if (!header.is_header && !header.is_standard_metadata) {
+            int length = std::max(8, header.getLength() * 2);
+            metadata.entries.push_back(IpsaMetadataEntry(
+                header.header_id, offset, length
+            ));
+            offset += length;
         }
     }
 }
