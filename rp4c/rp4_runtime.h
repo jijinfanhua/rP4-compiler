@@ -3,6 +3,7 @@
 #include "rp4_compiler.h"
 #include "ipsa_output.h"
 #include "ipsa_builder.h"
+#include "ipsa_tableupdate.h"
 #include <fstream>
 
 class Rp4Task {
@@ -33,8 +34,10 @@ class Rp4Runtime {
 public:
     std::unique_ptr<Rp4Task> now_task;
     std::unique_ptr<Rp4Task> next_task;
+    std::string update_json_filename = "update.json";
     Rp4Runtime(): now_task(nullptr), next_task(nullptr) {}
     void emitTask(std::string rp4_filename, std::string json_filename);
+    void emitUpdate(std::vector<std::string> params);
 };
 
 void Rp4Runtime::emitTask(std::string rp4_filename, std::string json_filename) {
@@ -50,6 +53,52 @@ void Rp4Runtime::emitTask(std::string rp4_filename, std::string json_filename) {
         // has been called previously
         next_task = std::make_unique<Rp4Task>();
         next_task->load(rp4_filename);
-        
+        next_task->allocateParsers();
     }
+}
+
+void Rp4Runtime::emitUpdate(std::vector<std::string> params) {
+    std::ofstream output(update_json_filename);
+    IpsaOutput out(output);
+    if (now_task.get() == nullptr) {
+        return; // does not has a rp4 task
+    }
+    // parse update type
+    auto cmd = params[0];
+    IpsaTableUpdateType type = (
+        cmd == "table_add" ? IpsaTableUpdateType::TBL_UPD_ADD : (
+        cmd == "table_mod" ? IpsaTableUpdateType::TBL_UPD_MOD : (
+        cmd == "table_del" ? IpsaTableUpdateType::TBL_UPD_DEL :
+                             IpsaTableUpdateType::TBL_UPD_ADD
+    )));
+    // parse update table
+    auto table_name = params[1];
+    auto table = now_task->builder.table_manager.lookup(table_name);
+    int proc_id = table->proc_id;
+    int matcher_id = table->id;
+    // parse action
+    auto action_name = params[2];
+    auto action = now_task->builder.action_manager.lookup(action_name);
+    int action_id = action->id;
+    IpsaTableUpdater updater(type, proc_id, matcher_id, action_id);
+    // parse keys
+    int i;
+    for (i = 3; i < params.size(); i++) {
+        if (params[i] == "=>") { i++; break; }
+        int width = 32, index = i - 3;
+        if (index < table->key_width_vec.size()) {
+            width = table->key_width_vec[index];
+        }
+        updater.keys.push_back(IpsaTableUpdateKey(params[i], width));
+    }
+    // parse action_paras
+    for (int j = i; j < params.size(); j++) {
+        int width = 32, index = j - i;
+        if (index < action->action_parameters_lengths.size()) {
+            width = action->action_parameters_lengths[index];
+        }
+        updater.action_para.push_back(IpsaTableUpdateKey(params[i], width).abandonMask());
+    }
+    out.emit(updater.toIpsaValue());
+    output.close();
 }

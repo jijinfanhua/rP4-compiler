@@ -62,6 +62,9 @@ public:
 
 class IpsaTable : public IpsaModule {
 public:
+    int proc_id = 0; // in which processor
+    std::vector<int> key_width_vec;
+
     int id = 0; // in matcher
     int table_id; // global
     // int hit_miss;

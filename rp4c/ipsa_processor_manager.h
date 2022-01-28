@@ -138,7 +138,7 @@ void IpsaProcessorManager::setupStages(IpsaGatewayManager* gateway_manager) {
     for (auto& stage : stage_manager->logical_stages) {
         for (int matcher_id = 0; int table_id : stage.table_id) {
             auto& gateway = gateway_manager->gateways[stage.gateway_id];
-            table_manager->setMatcherId(table_id, matcher_id, stage.action_proc);
+            table_manager->setMatcherId(table_id, stage.stage_id, matcher_id, stage.action_proc);
             gateway.next_table.setMatcherId(table_id, matcher_id++);
         }
     }

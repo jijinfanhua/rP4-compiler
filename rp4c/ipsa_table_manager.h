@@ -16,14 +16,15 @@ public:
     void load(const Rp4Ast* ast);
     const IpsaTable* lookup(int table_id) const;
     const IpsaTable* lookup(std::string name) const;
-    void setMatcherId(int table_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc);
+    void setMatcherId(int table_id, int proc_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc);
     void reorderStages(std::map<int, int> proc_proc);
 };
 
 // also set action_to_proc list
-void IpsaTableManager::setMatcherId(int table_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc) {
+void IpsaTableManager::setMatcherId(int table_id, int proc_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc) {
     for (auto& [name, table] : tables) {
         if (table.table_id == table_id) {
+            table.proc_id = proc_id;
             table.id = matcher_id;
             for (auto [action, proc] : action_proc) {
                 table.action_to_proc.push_back(IpsaActionProcPair(action, proc));
@@ -35,6 +36,7 @@ void IpsaTableManager::setMatcherId(int table_id, int matcher_id, const std::vec
 
 void IpsaTableManager::reorderStages(std::map<int, int> proc_proc) {
     for (auto& [name, table] : tables) {
+        table.proc_id = proc_proc[table.proc_id];
         for (auto& [action, proc] : table.action_to_proc) {
             proc = proc_proc[proc];
         }
@@ -99,6 +101,7 @@ void IpsaTableManager::load(const Rp4Ast* ast) {
             int table_key_width = 0;
             for (auto& entry : key_def_entries) {
                 auto x = header_manager->lookup(entry.lvalue);
+                table.key_width_vec.push_back(x->field_length);
                 table_key_width += x->field_length;
                 table.field_infos.push_back(x->toIpsaValue());
             }
