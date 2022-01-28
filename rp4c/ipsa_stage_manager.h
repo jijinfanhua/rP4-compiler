@@ -58,7 +58,7 @@ const IpsaStage* IpsaStageManager::lookup(std::string stage_name) const {
 
 const IpsaStage* IpsaStageManager::lookup(int stage_id) const {
     for (auto& stage : logical_stages) {
-        if (stage.stage_id == stage_id) {
+        if (!stage.removed && stage.stage_id == stage_id) {
             return &stage;
         }
     }
