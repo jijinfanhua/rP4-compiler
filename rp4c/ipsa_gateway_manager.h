@@ -54,7 +54,7 @@ void IpsaGatewayManager::load() {
                 );
             }
         }
-        if (gateway.next_table.default_entry == nullptr) {
+        if (gateway.next_table.default_entry.get() == nullptr) {
             gateway.next_table.default_entry = gateway.next_table.entries[0].value;
         }
         gateways.push_back(std::move(gateway));

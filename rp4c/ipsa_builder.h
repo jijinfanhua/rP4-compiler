@@ -73,7 +73,7 @@ public:
         for (int i = 0; i < ipsa_configuration::PROC_COUNT; i++) {
             dst.insert({{
                 "processor_" + std::to_string(i),
-                processors[i] == nullptr ? nullptr : processors[i]->toIpsaValue()
+                processors[i].get() == nullptr ? nullptr : processors[i]->toIpsaValue()
             }});
         }
         return makeValue(dst);
@@ -109,6 +109,8 @@ public:
         distribution(&processor_manager),
         memory(&processor_manager, &distribution),
         ipsa(&(header_manager.metadata)) {}
+    void allocateParsers() { distribution.distributeParsers(); }
+    void allocateMemory() { memory.allocateMemory(); }
     void allocateProcessors();
     void load(const Rp4Ast* ast) {
         header_manager.load(ast);
@@ -119,9 +121,6 @@ public:
         processor_manager.initializeStages();
         gateway_manager.load();
         processor_manager.setupStages(&gateway_manager);
-        distribution.distributeParsers();
-        memory.allocateMemory();
-        allocateProcessors();
     }
 };
 
@@ -145,7 +144,7 @@ void IpsaBuilder::allocateProcessors() {
                 int target_stage = i;
                 if (j + ipsa_configuration::MAX_LEVEL < parser_levels.size()) { // not the last
                     for (int k = 0; k < ipsa_configuration::PROC_COUNT; k++) { // allocate a new processor
-                        if (ipsa.processors[k] == nullptr && memory.physical_proc_id[k] < 0) {
+                        if (ipsa.processors[k].get() == nullptr && memory.physical_proc_id[k] < 0) {
                             ipsa.processors[k] = std::make_shared<IpsaProcessor>(extra_processor_id++);
                             target_stage = k;
                             break;
@@ -185,6 +184,25 @@ void IpsaBuilder::allocateProcessors() {
             // executor 
             for (auto [action_id, _] : stage.action_proc) {
                 processor->executor.push_back(action_manager.lookup(action_id));
+            }
+        }
+    }
+    // reorder the processors to match the physical allocation
+    // may cause chaos (cannot identify processors in differenct snapshots)
+    std::map<int, int> proc_proc = {{-1, -1}};
+    for (int i = 0; i < ipsa_configuration::PROC_COUNT; i++) {
+        if (ipsa.processors[i].get() != nullptr) {
+            proc_proc.insert({{ipsa.processors[i]->id, i}});
+        }
+    }
+    processor_manager.reorderStages(proc_proc);
+    table_manager.reorderStages(proc_proc);
+    for (int i = 0; i < ipsa_configuration::PROC_COUNT; i++) {
+        if (ipsa.processors[i].get() != nullptr) {
+            auto gateway = ipsa.processors[i]->gateway;
+            auto default_entry = gateway->next_table.default_entry;
+            if (default_entry.get() != nullptr) {
+                default_entry->setNextId(proc_proc);
             }
         }
     }

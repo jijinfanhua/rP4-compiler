@@ -17,6 +17,7 @@ public:
     const IpsaTable* lookup(int table_id) const;
     const IpsaTable* lookup(std::string name) const;
     void setMatcherId(int table_id, int matcher_id, const std::vector<std::pair<int, int>>& action_proc);
+    void reorderStages(std::map<int, int> proc_proc);
 };
 
 // also set action_to_proc list
@@ -28,6 +29,14 @@ void IpsaTableManager::setMatcherId(int table_id, int matcher_id, const std::vec
                 table.action_to_proc.push_back(IpsaActionProcPair(action, proc));
             }
             break;
+        }
+    }
+}
+
+void IpsaTableManager::reorderStages(std::map<int, int> proc_proc) {
+    for (auto& [name, table] : tables) {
+        for (auto& [action, proc] : table.action_to_proc) {
+            proc = proc_proc[proc];
         }
     }
 }

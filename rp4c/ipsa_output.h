@@ -12,7 +12,7 @@ public:
 };
 
 std::ostream& IpsaOutput::emit(std::shared_ptr<IpsaValue> value) {
-    if (value == nullptr) {
+    if (value.get() == nullptr) {
         out << "null";
     } else if (value->isInteger()) {
         out << std::static_pointer_cast<IpsaInteger>(value)->getValue();

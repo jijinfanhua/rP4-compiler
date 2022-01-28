@@ -4,12 +4,16 @@
 
 IpsaBuilder builder;
 
+// test the compilation (rp4 -> json) module
 int main(int argc, char* argv[]) {
     const char* input = argv[1];
     const char* output = argv[2];
     Rp4Compiler compiler;
     if (compiler.parse(input) == 0) {
         builder.load(compiler.ast.get());
+        builder.allocateParsers();
+        builder.allocateMemory();
+        builder.allocateProcessors();
         freopen(output, "w", stdout);
         IpsaOutput out(std::cout);
         // for (auto& gateway : builder.gateway_manager.gateways) {

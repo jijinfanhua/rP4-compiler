@@ -95,6 +95,7 @@ struct standard_metadata_t {
     bit<16> recirculate_port;
     bit<32> packet_length;
 } standard_metadata;
+
 parser MyParser(packet_in packet) {
 	state start {
 		packet.extract(hdr.ethernet);
@@ -491,7 +492,7 @@ control MyIngress {
 		};
 		executor {
 			set_bd_attributes: validate_ethernet_s;
-			NoAction_10: validate_ethernet_s;
+			NoAction_1: validate_ethernet_s;
 		};
 	}
 	stage validate_ethernet_s {
@@ -521,7 +522,7 @@ control MyIngress {
 		};
 		executor {
 			rmac_hit: tbl_act_s;
-			NoAction_32: dmac_s;
+			NoAction_8: dmac_s;
 		};
 	}
 	stage tbl_act_s {
@@ -632,7 +633,7 @@ control MyIngress {
 		};
 		executor {
 			set_nexthop_attributes: node_26;
-			NoAction_28: node_26;
+			NoAction_5: node_26;
 		};
 	}
 	stage smac_rewrite_s {
@@ -645,7 +646,7 @@ control MyIngress {
 		};
 		executor {
 			rewrite_smac: dmac_s;
-			NoAction_31: dmac_s;
+			NoAction_7: dmac_s;
 		};
 	}
 	stage dmac_s {
@@ -673,7 +674,7 @@ control MyIngress {
 			}
 		};
 		executor {
-			malformed_pkt_16: rmac_s;
+			malformed_pkt_12: rmac_s;
 			valid_ipv4_pkt: rmac_s;
 			NoAction_3: rmac_s;
 		};
@@ -689,7 +690,7 @@ control MyIngress {
 			}
 		};
 		executor {
-			malformed_pkt_17: rmac_s;
+			malformed_pkt_13: rmac_s;
 			valid_ipv6_pkt: rmac_s;
 			NoAction_4: rmac_s;
 		};
@@ -718,8 +719,8 @@ control MyIngress {
 			}
 		};
 		executor {
-			fib_fib_hit_23: tbl_act_6_s;
-			fib_fib_miss_21: tbl_act_6_s;
+			fib_fib_hit_21: tbl_act_6_s;
+			fib_fib_miss_23: tbl_act_6_s;
 		};
 	}
 	stage node_22 {
@@ -732,8 +733,8 @@ control MyIngress {
 			}
 		};
 		executor {
-			fibv6_fib_hit_27: tbl_act_6_s;
-			fibv6_fib_miss_25: tbl_act_6_s;
+			fibv6_fib_hit_25: tbl_act_6_s;
+			fibv6_fib_miss_27: tbl_act_6_s;
 		};
 	}
 	stage node_26 {

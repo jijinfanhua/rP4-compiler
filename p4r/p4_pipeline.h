@@ -340,12 +340,18 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
                 out << "\t\texecutor {" << std::endl;
                 for (auto t = std::begin(p.tables); t != std::end(p.tables); t++) {
                     if ((t->name == c.true_next || t->name == c.false_next) && !is_stage(t->name)) {
-                        for (int i = 0; auto [key, value] : t->next_tables) {
+                        for (auto [key, value] : t->next_tables) {
+                            int action_id = 0;
+                            for (int i = 0; i < t->action_ids.size(); i++) {
+                                if (t->actions[i] == key) {
+                                    action_id = t->action_ids[i];
+                                }
+                            }
                             out << "\t\t\t";
                             if (key == "__HIT__" || key == "__MISS__") {
                                 out << vp.actions.translate_name(t->name + key, 0);
                             } else {
-                                out << vp.actions.translate_name(key, t->action_ids[i++]);
+                                out << vp.actions.translate_name(key, action_id);
                             }
                             out << ": ";
                             if (value.size() == 0) {
@@ -384,12 +390,18 @@ std::ostream & operator<<(std::ostream & out, P4Pipelines const & vp) {
                     out << "\t\t\t}" << std::endl;
                     out << "\t\t};" << std::endl;
                     out << "\t\texecutor {" << std::endl;
-                    for (int i = 0; auto [key, value] : t.next_tables) {
+                    for (auto [key, value] : t.next_tables) {
+                        int action_id = 0;
+                        for (int i = 0; i < t.action_ids.size(); i++) {
+                            if (t.actions[i] == key) {
+                                action_id = t.action_ids[i];
+                            }
+                        }
                         out << "\t\t\t";
                         if (key == "__HIT__" || key == "__MISS__") {
                             out << vp.actions.translate_name(t.name + key, 0);
                         } else {
-                            out << vp.actions.translate_name(key, t.action_ids[i++]);
+                            out << vp.actions.translate_name(key, action_id);
                         }
                         out << ": ";
                         if (value.size() == 0) {

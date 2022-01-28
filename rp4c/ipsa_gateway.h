@@ -20,6 +20,7 @@ public:
     IpsaGatewayEntryType type;
     virtual int getId() const = 0;
     virtual void setMatcherId(int table_id, int matcher_id) {}
+    virtual void setNextId(const std::map<int, int>& proc_proc) {}
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
             {"type", makeValue(to_string(type))},
@@ -49,6 +50,11 @@ public:
     int stage_id;
     IpsaGatewayStageEntry(int _stage_id) : stage_id(_stage_id) {
         type = GTW_ET_STAGE;
+    }
+    virtual void setNextId(const std::map<int, int>& proc_proc) {
+        if (auto x = proc_proc.find(stage_id); x != std::end(proc_proc)) {
+            stage_id = x->second;
+        }
     }
     virtual int getId() const { return stage_id; }
 };

@@ -39,6 +39,7 @@ public:
         table_manager(_table_manager) 
         {}
     void initializeStages();
+    void reorderStages(std::map<int, int> proc_proc);
     void setupStages(IpsaGatewayManager* gateway_manager);
 };
 
@@ -55,6 +56,7 @@ void IpsaProcessorManager::initializeStages() {
         }
     }
     // remove empty stages
+    std::map<int, int> goto_maps;
     for (auto& stage : stage_manager->logical_stages) {
         if (auto virtual_action = stage.def->get_virtual_action(); virtual_action != nullptr) {
             // replace stage with virtual_action
@@ -84,6 +86,7 @@ void IpsaProcessorManager::initializeStages() {
             }
             if (!conflict_flag) {
                 stage.removed = true;
+                goto_maps.insert({{stage.stage_id, next_stage_id}});
             }
         }
     }
@@ -93,19 +96,20 @@ void IpsaProcessorManager::initializeStages() {
     for (auto& stage : stage_manager->logical_stages) {
         if (!stage.removed) {
             reorder_map.insert({{stage.stage_id, global_stage_id++}});
-        } else {
-            reorder_map.insert({{stage.stage_id, -1}});
         }
     }
     for (auto& stage : stage_manager->logical_stages) {
-        stage.stage_id = reorder_map[stage.stage_id];
-        for (int i = 0; i < stage.action_proc.size(); i++) {
-            stage.action_proc[i] = {
-                stage.action_proc[i].first,
-                reorder_map[stage.action_proc[i].second]
-            };
+        for (IpsaStage& x = stage; x.removed; ) {
+            IpsaStage& y = stage_manager->logical_stages[goto_maps[x.stage_id]];
+            if (y.removed) {
+                x = y;
+            } else {
+                reorder_map.insert({{stage.stage_id, reorder_map[y.stage_id]}});
+                break;
+            }
         }
     }
+    reorderStages(std::move(reorder_map));
     // generate tables
     for (auto& stage : stage_manager->logical_stages) {
         for (auto& switch_entry : stage.def->matcher.switch_entries) {
@@ -113,6 +117,18 @@ void IpsaProcessorManager::initializeStages() {
                 auto& name = std::static_pointer_cast<Rp4SwitchTableStmt>(switch_entry.value)->name;
                 stage.table_id.push_back(table_manager->lookup(name)->table_id);
             }
+        }
+    }
+}
+
+void IpsaProcessorManager::reorderStages(std::map<int, int> proc_proc) {
+    for (auto& stage : stage_manager->logical_stages) {
+        stage.stage_id = proc_proc[stage.stage_id];
+        for (int i = 0; i < stage.action_proc.size(); i++) {
+            stage.action_proc[i] = {
+                stage.action_proc[i].first,
+                proc_proc[stage.action_proc[i].second]
+            };
         }
     }
 }
