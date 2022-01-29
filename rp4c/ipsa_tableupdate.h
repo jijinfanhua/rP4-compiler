@@ -22,5 +22,6 @@ public:
             {"action_id", makeValue(action_id)},
             {"action_para", makeValue(action_para)}
         };
+        return makeValue(dst);
     }
 };

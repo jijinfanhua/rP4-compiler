@@ -54,6 +54,15 @@ void Rp4Runtime::emitTask(std::string rp4_filename, std::string json_filename) {
         next_task = std::make_unique<Rp4Task>();
         next_task->load(rp4_filename);
         next_task->allocateParsers();
+        if (!next_task->builder.allocateMemory(now_task->builder)) {
+            next_task->builder.memory.removeAllEntries();
+            next_task->allocateMemory();
+        } else {
+            next_task->builder.ipsa.is_incremental = 1;
+        }
+        next_task->allocateProcessors();
+        next_task->output_all(rp4_filename);
+        now_task = std::move(next_task);
     }
 }
 

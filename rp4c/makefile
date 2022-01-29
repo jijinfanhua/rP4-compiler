@@ -4,9 +4,9 @@ CC       = g++
 CFLAGS   = -std=gnu++2a
 H_RP4    = $(wildcard ./rp4_*.h) $(wildcard ./*.hpp)
 H_IPSA   = $(wildcard ./ipsa_*.h)
-SOURCE   = rp4_compiler.cpp
-TARGET   = rp4_compiler.exe
-CMP_OBJ  = rp4_compiler.o
+SOURCE   = rp4c.cpp
+TARGET   = rp4c.exe
+CMP_OBJ  = rp4c.o
 LEX_OBJ  = lex.yy.o
 LEX_SRC  = lex.l
 LEX_C    = lex.yy.c

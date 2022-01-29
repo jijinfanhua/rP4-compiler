@@ -61,6 +61,7 @@ public:
 
 class Ipsa : public IpsaModule {
 public:
+    int is_incremental = 0;
     const IpsaMetadata* metadata;
     std::vector<std::shared_ptr<IpsaProcessor>> processors;
     Ipsa(const IpsaMetadata* _metadata): metadata(_metadata) {
@@ -68,6 +69,7 @@ public:
     }
     virtual std::shared_ptr<IpsaValue> toIpsaValue() const {
         std::map<std::string, std::shared_ptr<IpsaValue>> dst = {
+            {"is_incremental", makeValue(is_incremental)},
             {"metadata", metadata->toIpsaValue()},
         };
         for (int i = 0; i < ipsa_configuration::PROC_COUNT; i++) {
@@ -111,7 +113,7 @@ public:
         ipsa(&(header_manager.metadata)) {}
     void allocateParsers() { distribution.distributeParsers(); }
     void allocateMemory() { memory.allocateMemory(); }
-    void allocateMemory(const IpsaBuilder& prev);
+    bool allocateMemory(const IpsaBuilder& prev);
     void allocateProcessors();
     void load(const Rp4Ast* ast) {
         header_manager.load(ast);
@@ -209,7 +211,170 @@ void IpsaBuilder::allocateProcessors() {
     }
 }
 
-void IpsaBuilder::allocateMemory(const IpsaBuilder& prev) {
-    // di
-    
+bool IpsaBuilder::allocateMemory(const IpsaBuilder& prev) {
+    memory.calculateTableSpace();
+    std::map<int, const IpsaTable*> table_map;
+    // diff the table list
+    for (auto& [name, table] : table_manager.tables) {
+        bool exist = false;
+        for (auto& [prev_name, prev_table] : prev.table_manager.tables) {
+            if (prev_name == name) {
+                table_map.insert({{table.table_id, &prev_table}});
+                exist = true;
+                break;
+            }
+        }
+        if (!exist) {
+            table_map.insert({{table.table_id, nullptr}});
+        }
+    }
+    // existed table make the processors in clusters
+    std::map<int, int> proc_cluster;
+    for (int stage_id : distribution.topo_sequence) {
+        proc_cluster.insert({{stage_id, -1}});
+    }
+    for (auto& [name, table] : table_manager.tables) {
+        auto proc_id = table.proc_id;
+        auto prev_table = table_map[table.table_id];
+        if (prev_table != nullptr) {
+            int prev_proc_id = prev_table->proc_id;
+            int cluster_id = prev_proc_id / ipsa_configuration::CLUSTER_PROC_COUNT;
+            if (int x = proc_cluster[proc_id]; x >= 0) {
+                if (x != cluster_id) {
+                    return false; // tables in different clusters must be allocated to the same processor
+                }
+            } else {
+                proc_cluster[proc_id] = cluster_id;
+            }
+        }
+    }
+    // allocate memory
+    std::vector<std::pair<int, int>> cluster_space; // space in clusters
+    std::vector<std::vector<int>> cluster_proc; // proc id in clusters
+    for (int i = 0; i < ipsa_configuration::CLUSTER_COUNT; i++) {
+        cluster_space.push_back({
+            ipsa_configuration::CLUSTER_SRAM_COUNT,
+            ipsa_configuration::CLUSTER_TCAM_COUNT
+        });
+        cluster_proc.push_back({});
+    }
+    // locate fixed processors
+    auto& proc_space = memory.proc_space;
+    auto& physical_proc_id = memory.physical_proc_id;
+    for (int stage_id : distribution.topo_sequence) {
+        if (int i = proc_cluster[stage_id]; i >= 0) {
+            if (cluster_proc[i].size() < ipsa_configuration::CLUSTER_PROC_COUNT &&
+                cluster_space[i].first >= proc_space[stage_id].first &&
+                cluster_space[i].second >= proc_space[stage_id].second) {
+                cluster_space[i] = {
+                    cluster_space[i].first - proc_space[stage_id].first,
+                    cluster_space[i].second - proc_space[stage_id].second
+                };
+                int target = i * ipsa_configuration::CLUSTER_PROC_COUNT + cluster_proc[i].size();
+                cluster_proc[i].push_back(stage_id);
+                physical_proc_id[target] = stage_id;
+            } else {
+                return false; 
+                //    a cluster must contain exceeded processors
+                // or a cluster cannot include existing tables (actually this should not happen)
+            }
+        }
+    }
+    // locate dynamic processors
+    for (int stage_id : distribution.topo_sequence) {
+        if (proc_cluster[stage_id] < 0) {
+            int target = -1;
+            for (int i = 0; i < ipsa_configuration::CLUSTER_COUNT; i++) {
+                if (cluster_proc[i].size() < ipsa_configuration::CLUSTER_PROC_COUNT &&
+                    cluster_space[i].first >= proc_space[stage_id].first &&
+                    cluster_space[i].second >= proc_space[stage_id].second) {
+                    cluster_space[i] = {
+                        cluster_space[i].first - proc_space[stage_id].first,
+                        cluster_space[i].second - proc_space[stage_id].second
+                    };
+                    int target = i * ipsa_configuration::CLUSTER_PROC_COUNT + cluster_proc[i].size();
+                    cluster_proc[i].push_back(stage_id);
+                    break;
+                }
+            }
+            if (target >= 0) {
+                physical_proc_id[target] = stage_id;
+            } else {
+                return false; // cannot arrange memory
+            }
+        }
+    }
+    // if arrive this point, incremental update is possible
+    // now, it is time to set configs
+    std::vector<std::pair<std::vector<bool>, std::vector<bool> > > cluster_bitmap;
+    for (int i = 0; i < ipsa_configuration::CLUSTER_COUNT; i++) {
+        cluster_bitmap.push_back({
+            std::vector<bool>(ipsa_configuration::CLUSTER_TCAM_COUNT, false),
+            std::vector<bool>(ipsa_configuration::CLUSTER_SRAM_COUNT, false)
+        });
+    }
+    // existing tables
+    for (auto& [name, table] : table_manager.tables) {
+        auto prev_table = table_map[table.table_id];
+        auto& now_cluster = cluster_bitmap[proc_cluster[table.proc_id]];
+        if (prev_table != nullptr) {
+            // copy table
+            for (int x : prev_table->key_memory.config) {
+                if (prev_table->key_memory.type == MEM_TCAM) {
+                    now_cluster.first[x] = true;
+                } else {
+                    now_cluster.second[x] = true;
+                }
+                table.key_memory.config.push_back(x);
+            }
+            for (int y : prev_table->value_memory.config) {
+                now_cluster.second[y] = true;
+                table.value_memory.config.push_back(y);
+            }
+        }
+    }
+    // other tables
+    for (auto& [name, table] : table_manager.tables) {
+        auto prev_table = table_map[table.table_id];
+        auto& now_cluster = cluster_bitmap[proc_cluster[table.proc_id]];
+        if (prev_table == nullptr) {
+            // key
+            for (int i = 0; i < table.key_memory.depth * table.key_memory.width; i++) {
+                int target = -1;
+                if (table.key_memory.type == MEM_TCAM) {
+                    for (int j = 0; j < ipsa_configuration::CLUSTER_TCAM_COUNT; j++) {
+                        if (!now_cluster.first[j]) {
+                            now_cluster.first[target = j] = true;
+                            break;
+                        }
+                    }
+                } else {
+                    for (int j = 0; j < ipsa_configuration::CLUSTER_SRAM_COUNT; j++) {
+                        if (!now_cluster.second[j]) {
+                            now_cluster.first[target = j] = true;
+                            break;
+                        }
+                    }
+                }
+                if (target >= 0) {
+                    table.key_memory.config.push_back(target);
+                }
+            }
+            // value
+            for (int i = 0; i < table.value_memory.depth * table.value_memory.width; i++) {
+                int target = -1;
+                for (int j = 0; j < ipsa_configuration::CLUSTER_SRAM_COUNT; j++) {
+                    if (!now_cluster.second[j]) {
+                        now_cluster.first[target = j] = true;
+                        break;
+                    }
+                }
+                if (target >= 0) {
+                    table.value_memory.config.push_back(target);
+                }
+            }
+        }
+    }
+    // ok
+    return true;
 }

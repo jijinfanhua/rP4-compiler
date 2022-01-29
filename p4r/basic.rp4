@@ -1,96 +1,291 @@
-header ethernet_t {
-	bit<48>	dstAddr;
-	bit<48>	srcAddr;
-	bit<16>	etherType;
+{
+  "is_incremental" : 0,
+  "metadata" : [
+    {
+      "id" : 31,
+      "length" : 20,
+      "offset" : 0
+    },
+    {
+      "id" : 0,
+      "length" : 8,
+      "offset" : 20
+    }
+  ],
+  "processor_0" : {
+    "executor" : [
+      {
+        "action_parameters_lengths" : [],
+        "id" : 1,
+        "parameter_num" : 0,
+        "primitives" : [
+          {
+            "lvalue" : {
+              "field_internal_offset" : 91,
+              "field_length" : 1,
+              "header_id" : 31,
+              "type" : "FIELD"
+            },
+            "rvalue" : {
+              "type" : "CONST",
+              "value" : 1
+            }
+          }
+        ]
+      },
+      {
+        "action_parameters_lengths" : [
+          48,
+          9
+        ],
+        "id" : 2,
+        "parameter_num" : 2,
+        "primitives" : [
+          {
+            "lvalue" : {
+              "field_internal_offset" : 9,
+              "field_length" : 9,
+              "header_id" : 31,
+              "type" : "FIELD"
+            },
+            "rvalue" : {
+              "type" : "PARAM",
+              "value" : 1
+            }
+          },
+          {
+            "lvalue" : {
+              "field_internal_offset" : 48,
+              "field_length" : 48,
+              "header_id" : 1,
+              "type" : "FIELD"
+            },
+            "rvalue" : {
+              "type" : "FIELD",
+              "value" : {
+                "field_internal_offset" : 0,
+                "field_length" : 48,
+                "header_id" : 1,
+                "type" : "FIELD"
+              }
+            }
+          },
+          {
+            "lvalue" : {
+              "field_internal_offset" : 0,
+              "field_length" : 48,
+              "header_id" : 1,
+              "type" : "FIELD"
+            },
+            "rvalue" : {
+              "type" : "PARAM",
+              "value" : 0
+            }
+          },
+          {
+            "lvalue" : {
+              "field_internal_offset" : 64,
+              "field_length" : 8,
+              "header_id" : 2,
+              "type" : "FIELD"
+            },
+            "rvalue" : {
+              "type" : "EXPR",
+              "value" : {
+                "left" : {
+                  "type" : "EXPR",
+                  "value" : {
+                    "left" : {
+                      "type" : "FIELD",
+                      "value" : {
+                        "field_internal_offset" : 64,
+                        "field_length" : 8,
+                        "header_id" : 2,
+                        "type" : "FIELD"
+                      }
+                    },
+                    "op" : "+",
+                    "right" : {
+                      "type" : "CONST",
+                      "value" : 255
+                    }
+                  }
+                },
+                "op" : "&",
+                "right" : {
+                  "type" : "CONST",
+                  "value" : 255
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "action_parameters_lengths" : [],
+        "id" : 0,
+        "parameter_num" : 0,
+        "primitives" : []
+      }
+    ],
+    "gateway" : {
+      "expressions" : [
+        {
+          "type" : "EXPR",
+          "value" : {
+            "left" : {
+              "type" : "CONST",
+              "value" : 1
+            },
+            "op" : "==",
+            "right" : {
+              "type" : "FIELD",
+              "value" : {
+                "field_internal_offset" : 0,
+                "field_length" : 0,
+                "header_id" : 2,
+                "type" : "VALID"
+              }
+            }
+          }
+        }
+      ],
+      "next_table" : {
+        "default" : {
+          "type" : "STAGE",
+          "value" : -1
+        },
+        "entries" : [
+          {
+            "bitmap" : 1,
+            "value" : {
+              "type" : "TABLE",
+              "value" : 0
+            }
+          }
+        ]
+      }
+    },
+    "id" : 0,
+    "matcher" : [
+      {
+        "action_to_proc" : [
+          {
+            "action_id" : 1,
+            "proc_id" : -1
+          },
+          {
+            "action_id" : 2,
+            "proc_id" : -1
+          },
+          {
+            "action_id" : 0,
+            "proc_id" : -1
+          }
+        ],
+        "field_infos" : [
+          {
+            "field_internal_offset" : 128,
+            "field_length" : 32,
+            "header_id" : 2,
+            "type" : "FIELD"
+          }
+        ],
+        "id" : 0,
+        "key_memory" : {
+          "config" : [
+            0
+          ],
+          "depth" : 1,
+          "type" : "TCAM",
+          "width" : 1
+        },
+        "match_type" : "LPM",
+        "miss_action_id" : 1,
+        "no_table" : 0,
+        "value_memory" : {
+          "config" : [
+            0
+          ],
+          "width" : 1
+        }
+      }
+    ],
+    "parser" : {
+      "levels" : [
+        [
+          {
+            "parser_sram_entry" : {
+              "accept_drop" : 2,
+              "header_id" : 1,
+              "header_length" : 112,
+              "next_state" : 1,
+              "transition_field_num" : 1,
+              "transition_fields" : [
+                {
+                  "field_internal_offset" : 96,
+                  "field_length" : 16,
+                  "header_id" : 1,
+                  "type" : "FIELD"
+                }
+              ]
+            },
+            "parser_tcam_entry" : {
+              "current_state" : 0,
+              "entry" : 0,
+              "mask" : 0
+            }
+          }
+        ],
+        [
+          {
+            "parser_sram_entry" : {
+              "accept_drop" : 2,
+              "header_id" : 2,
+              "header_length" : 160,
+              "next_state" : 2,
+              "transition_field_num" : 0,
+              "transition_fields" : []
+            },
+            "parser_tcam_entry" : {
+              "current_state" : 1,
+              "entry" : 2048,
+              "mask" : -1
+            }
+          },
+          {
+            "parser_sram_entry" : {
+              "accept_drop" : 0,
+              "header_id" : 0,
+              "header_length" : 0,
+              "next_state" : 0,
+              "transition_field_num" : 0,
+              "transition_fields" : []
+            },
+            "parser_tcam_entry" : {
+              "current_state" : 1,
+              "entry" : 0,
+              "mask" : 0
+            }
+          }
+        ]
+      ],
+      "parser_level" : 2
+    }
+  },
+  "processor_1" : null,
+  "processor_10" : null,
+  "processor_11" : null,
+  "processor_12" : null,
+  "processor_13" : null,
+  "processor_14" : null,
+  "processor_15" : null,
+  "processor_2" : null,
+  "processor_3" : null,
+  "processor_4" : null,
+  "processor_5" : null,
+  "processor_6" : null,
+  "processor_7" : null,
+  "processor_8" : null,
+  "processor_9" : null
 }
-header ipv4_t {
-	bit<4>	version;
-	bit<4>	ihl;
-	bit<8>	diffserv;
-	bit<16>	totalLen;
-	bit<16>	identification;
-	bit<3>	flags;
-	bit<13>	fragOffset;
-	bit<8>	ttl;
-	bit<8>	protocol;
-	bit<16>	hdrChecksum;
-	bit<32>	srcAddr;
-	bit<32>	dstAddr;
-}
-struct metadata {
-} meta;
-struct headers {
-	ethernet_t	ethernet;
-	ipv4_t	ipv4;
-} hdr;
-
-struct standard_metadata_t {
-    bit<9> ingress_port;
-    bit<9> egress_spec;
-    bit<9> egress_port;
-    bit<32> clone_spec;
-    bit<32> instance_type;
-    bit<1> drop;
-    bit<16> recirculate_port;
-    bit<32> packet_length;
-} standard_metadata;
-parser MyParser(packet_in packet) {
-	state start {
-		packet.extract(hdr.ethernet);
-		transition select(hdr.ethernet.etherType) {
-			0x0800: parse_ipv4;
-			default: accept;
-		}
-	}
-	state parse_ipv4 {
-		packet.extract(hdr.ipv4);
-		transition accept;
-	}
-}
-
-actions {
-	action NoAction() {
-	}
-	action drop() {
-		standard_metadata.drop = 1;
-	}
-	action ipv4_forward(bit<48> dstAddr, bit<9> port) {
-		standard_metadata.egress_spec = port;
-		hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
-		hdr.ethernet.dstAddr = dstAddr;
-		hdr.ipv4.ttl = ((hdr.ipv4.ttl + 0xff) & 0xff);
-	}
-}
-
-tables {
-	table ipv4_lpm {
-		key = {
-			hdr.ipv4.dstAddr: lpm;
-		}
-		size = 1024;
-		value_width = 73;
-		default_action = drop;
-	}
-}
-
-control MyIngress {
-	stage node_2 {
-		parser {
-			ipv4;
-		};
-		matcher {
-			switch (hdr.ipv4.isValid()) {
-				0b1: table(ipv4_lpm);
-				*: None;
-			}
-		};
-		executor {
-			drop: None;
-			ipv4_forward: None;
-			NoAction: None;
-		};
-	}
-}
-control MyEgress {
-}
-

@@ -9,17 +9,26 @@ public:
     // proc_id -> (sram#, tcam#)
     IpsaProcessorManager* processor_manager;
     IpsaDistribution* distribution;
+    std::map<int, IpsaTable*> tables;
+    std::map<int, std::pair<int, int>> table_space;
     std::map<int, std::pair<int, int>> proc_space;
     std::map<int, int> physical_proc_id;
     IpsaMemory(IpsaProcessorManager* _processor_manager, IpsaDistribution* _distribution): 
         processor_manager(_processor_manager), distribution(_distribution) {}
     void allocateMemory();
+    void calculateTableSpace();
+    void removeAllEntries();
 };
 
-void IpsaMemory::allocateMemory() {
+void IpsaMemory::removeAllEntries() {
+    tables.clear();
+    table_space.clear();
+    proc_space.clear();
+    physical_proc_id.clear();
+}
+
+void IpsaMemory::calculateTableSpace() {
     // table_id -> space
-    std::map<int, IpsaTable*> tables;
-    std::map<int, std::pair<int, int>> table_space;
     for (auto& [name, table] : processor_manager->table_manager->tables) {
         int sram_number = 0;
         int tcam_number = 0;
@@ -32,7 +41,7 @@ void IpsaMemory::allocateMemory() {
         table_space.insert({{table.table_id, {sram_number, tcam_number}}});
         tables.insert({{table.table_id, &table}});
     }
-    // proc_id -> space
+    // proc -> space
     for (auto& stage : processor_manager->stage_manager->logical_stages) {
         if (stage.removed) { continue; }
         int sram_number = 0;
@@ -43,6 +52,10 @@ void IpsaMemory::allocateMemory() {
         }
         proc_space.insert({{stage.stage_id, {sram_number, tcam_number}}});
     }  
+}
+
+void IpsaMemory::allocateMemory() {
+    calculateTableSpace();
     // allocate memory
     std::vector<std::pair<int, int>> cluster_space; // space in clusters
     std::vector<std::vector<int>> cluster_proc; // proc id in clusters
