@@ -13,6 +13,7 @@ inline bool is_command(std::string cmd) {
 int main(int argc, char **argv) {
     std::string line, temp;
     while (true) {
+        std::cout << ">>> " << std::flush;
         std::getline(std::cin, line);
         std::vector<std::string> params;
         std::istringstream is(line);

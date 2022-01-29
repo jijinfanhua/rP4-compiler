@@ -48,7 +48,7 @@ void Rp4Runtime::emitTask(std::string rp4_filename, std::string json_filename) {
         now_task->allocateParsers();
         now_task->allocateMemory();
         now_task->allocateProcessors();
-        now_task->output_all(rp4_filename);
+        now_task->output_all(json_filename);
     } else {
         // has been called previously
         next_task = std::make_unique<Rp4Task>();
@@ -61,7 +61,7 @@ void Rp4Runtime::emitTask(std::string rp4_filename, std::string json_filename) {
             next_task->builder.ipsa.is_incremental = 1;
         }
         next_task->allocateProcessors();
-        next_task->output_all(rp4_filename);
+        next_task->output_all(json_filename);
         now_task = std::move(next_task);
     }
 }
@@ -106,7 +106,7 @@ void Rp4Runtime::emitUpdate(std::vector<std::string> params) {
         if (index < action->action_parameters_lengths.size()) {
             width = action->action_parameters_lengths[index];
         }
-        updater.action_para.push_back(IpsaTableUpdateKey(params[i], width).abandonMask());
+        updater.action_para.push_back(IpsaTableUpdateKey(params[j], width).abandonMask());
     }
     out.emit(updater.toIpsaValue());
     output.close();
