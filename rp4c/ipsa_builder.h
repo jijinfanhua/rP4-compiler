@@ -111,6 +111,7 @@ public:
         ipsa(&(header_manager.metadata)) {}
     void allocateParsers() { distribution.distributeParsers(); }
     void allocateMemory() { memory.allocateMemory(); }
+    void allocateMemory(const IpsaBuilder& prev);
     void allocateProcessors();
     void load(const Rp4Ast* ast) {
         header_manager.load(ast);
@@ -206,4 +207,9 @@ void IpsaBuilder::allocateProcessors() {
             }
         }
     }
+}
+
+void IpsaBuilder::allocateMemory(const IpsaBuilder& prev) {
+    // di
+    
 }

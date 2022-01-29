@@ -198,7 +198,9 @@
         ],
         "id" : 0,
         "key_memory" : {
-          "config" : [],
+          "config" : [
+            0
+          ],
           "depth" : 1,
           "type" : "TCAM",
           "width" : 1
@@ -207,7 +209,9 @@
         "miss_action_id" : 1,
         "no_table" : 0,
         "value_memory" : {
-          "config" : [],
+          "config" : [
+            0
+          ],
           "width" : 1
         }
       }
@@ -419,7 +423,9 @@
         ],
         "id" : 0,
         "key_memory" : {
-          "config" : [],
+          "config" : [
+            1
+          ],
           "depth" : 1,
           "type" : "SRAM",
           "width" : 1
@@ -428,7 +434,9 @@
         "miss_action_id" : 2,
         "no_table" : 0,
         "value_memory" : {
-          "config" : [],
+          "config" : [
+            2
+          ],
           "width" : 1
         }
       }
