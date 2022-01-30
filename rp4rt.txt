@@ -24,6 +24,7 @@ json = {
 	type = ADD | MOD | DEL
 	proc_id = INT
 	matcher_id = INT // locate the table
+	match_type = EXACT | LPM | TERNARY
 	keys = [
 		{
 			width = INT // by bit

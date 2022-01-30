@@ -90,6 +90,7 @@ void Rp4Runtime::emitUpdate(std::vector<std::string> params) {
     auto action = now_task->builder.action_manager.lookup(action_name);
     int action_id = action->id;
     IpsaTableUpdater updater(type, proc_id, matcher_id, action_id);
+    updater.match_type = table->match_type;
     // parse keys
     int i;
     for (i = 3; i < params.size(); i++) {

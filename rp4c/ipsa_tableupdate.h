@@ -8,6 +8,7 @@ public:
     IpsaTableUpdateType type;
     int proc_id;
     int matcher_id;
+    Rp4MatchType match_type = MT_EXACT;
     std::vector<IpsaTableUpdateKey> keys;
     int action_id;
     std::vector<IpsaTableUpdateActionParameter> action_para;
@@ -18,6 +19,7 @@ public:
             {"type", makeValue(to_string(type))},
             {"proc_id", makeValue(proc_id)},
             {"matcher_id", makeValue(matcher_id)},
+            {"match_type", makeValue(to_string(match_type))},
             {"keys", makeValue(keys)},
             {"action_id", makeValue(action_id)},
             {"action_para", makeValue(action_para)}
